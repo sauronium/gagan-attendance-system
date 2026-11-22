@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agam Ops Platform</title>
+<meta name="description" content="Project document for the Agam Water Industries attendance, employee management, client and messaging system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f7f9; --surface:#ffffff; --surface-2:#eef3f6; --ink:#0f1f2b; --ink-2:#425466; --ink-3:#768899;
+  --line:#d8e1e8; --accent:#0a6a86; --accent-ink:#ffffff; --accent-soft:#e1f1f6;
+  --ok:#1d8656; --ok-soft:#e1f4ea; --warn:#a86b12; --warn-soft:#fbf0dc; --bad:#bb3a2c; --bad-soft:#fbe6e3;
+  --violet:#6047b5; --violet-soft:#ece8fa; --shadow:0 1px 2px rgba(15,31,43,.06),0 4px 16px rgba(15,31,43,.05);
+  --radius:12px; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace; --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1318; --surface:#131d24; --surface-2:#1a2730; --ink:#e5edf2; --ink-2:#a8b7c3; --ink-3:#71859a;
+    --line:#26343f; --accent:#4ec1de; --accent-ink:#06222b; --accent-soft:#11313b;
+    --ok:#4fc58a; --ok-soft:#12302a; --warn:#e2a94b; --warn-soft:#382a12; --bad:#ee7a6c; --bad-soft:#3b1a17;
+    --violet:#a990f2; --violet-soft:#251e3d; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1318; --surface:#131d24; --surface-2:#1a2730; --ink:#e5edf2; --ink-2:#a8b7c3; --ink-3:#71859a;
+  --line:#26343f; --accent:#4ec1de; --accent-ink:#06222b; --accent-soft:#11313b;
+  --ok:#4fc58a; --ok-soft:#12302a; --warn:#e2a94b; --warn-soft:#382a12; --bad:#ee7a6c; --bad-soft:#3b1a17;
+  --violet:#a990f2; --violet-soft:#251e3d; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+h1,h2,h3,h4{line-height:1.25;margin:0}
+p{margin:.5em 0 1em}
+ul{padding-left:1.2em;margin:.4em 0 1em}
+li{margin:.2em 0}
+
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1240px;margin:0 auto;gap:40px;padding:0 24px}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:32px 0}
+nav.toc .brand{font-weight:700;font-size:14px;letter-spacing:.02em;margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--ink-3);margin-bottom:20px}
+nav.toc ol{list-style:none;padding:0;margin:0;counter-reset:t}
+nav.toc li{margin:0}
+nav.toc a{display:flex;gap:10px;padding:6px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-size:13.5px}
+nav.toc a:hover{background:var(--surface-2);color:var(--ink)}
+nav.toc a span{font-family:var(--mono);font-size:12px;color:var(--ink-3);min-width:18px}
+.theme-btn{margin-top:20px;font:inherit;font-size:12.5px;background:var(--surface);color:var(--ink-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+
+main{padding:40px 0 80px;min-width:0}
+header.hero{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:36px 36px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+header.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,var(--accent-soft) 0%,transparent 70%);pointer-events:none}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:500}
+header.hero h1{font-size:34px;margin:10px 0 12px;letter-spacing:-.01em;max-width:720px}
+header.hero p.lede{font-size:17px;color:var(--ink-2);max-width:720px;margin:0 0 22px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;border-top:1px solid var(--line);padding-top:18px}
+.meta div{font-size:13px;color:var(--ink-3)}
+.meta b{display:block;color:var(--ink);font-weight:600;font-size:14px}
+
+section{margin-top:56px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.sec-head .num{font-family:var(--mono);color:var(--accent);font-size:14px;font-weight:500}
+.sec-head h2{font-size:24px;letter-spacing:-.01em}
+h3{font-size:18px;margin:28px 0 8px}
+h4{font-size:15px;margin:0 0 6px}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+.stat{padding:16px 18px}
+.stat .v{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.stat .l{font-size:13px;color:var(--ink-2);margin-top:4px}
+
+.figure{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 20px 14px;margin:18px 0;box-shadow:var(--shadow)}
+.figure svg{display:block;width:100%;height:auto}
+.figure .cap{font-size:13px;color:var(--ink-3);margin-top:10px;display:flex;gap:8px}
+.figure .cap b{color:var(--ink-2);font-family:var(--mono);font-weight:500}
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll-x > svg{min-width:720px}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill.vio{background:var(--violet-soft);color:var(--violet)}
+.pill.neu{background:var(--surface-2);color:var(--ink-2)}
+
+.feature{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.feature .ic{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.feature .ic svg{width:22px;height:22px}
+.feature ul{margin:6px 0 0;font-size:14px;color:var(--ink-2)}
+.feature p{margin:2px 0 0;font-size:14px;color:var(--ink-2)}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600;background:var(--surface-2)}
+.table-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;box-shadow:var(--shadow);margin:16px 0}
+td.c,th.c{text-align:center}
+.yes{color:var(--ok);font-weight:700}
+.part{color:var(--warn);font-weight:700}
+.no{color:var(--ink-3)}
+
+.scope{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.scope .card h4{display:flex;align-items:center;gap:8px}
+.scope ul{font-size:14.5px}
+
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0;font-size:14.5px}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+
+/* flow steps */
+.flow{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding-bottom:6px}
+.flow.plain{gap:12px}
+.flow.plain .step{margin-left:0}
+.flow.plain .step::before,.flow.plain .step::after{display:none}
+.step{flex:1 1 0;min-width:112px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;position:relative;font-size:13px}
+.step + .step{margin-left:22px}
+.step + .step::before{content:"";position:absolute;left:-18px;top:50%;width:14px;height:2px;background:var(--ink-3)}
+.step + .step::after{content:"";position:absolute;left:-8px;top:calc(50% - 4px);border:5px solid transparent;border-left-color:var(--ink-3)}
+.step .n{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500}
+.step b{display:block;font-size:13.5px;margin:2px 0 3px}
+.step span{color:var(--ink-2);font-size:12.5px;line-height:1.45;display:block}
+.step.alert{background:var(--warn-soft);border-color:transparent}
+
+/* mock dashboard */
+.mock{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.mock-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2);font-size:12.5px;color:var(--ink-3)}
+.mock-bar i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+.mock-body{padding:18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .v{font-size:22px;font-weight:700;line-height:1.1}
+.kpi .l{font-size:12px;color:var(--ink-2)}
+.kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)} .kpi.vio .v{color:var(--violet)}
+.bars{display:grid;grid-template-columns:110px 1fr 40px;gap:8px 10px;align-items:center;font-size:12.5px;margin-top:6px}
+.bar{height:12px;border-radius:6px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar i.p{background:var(--ok)} .bar i.l{background:var(--warn)} .bar i.v{background:var(--violet)} .bar i.a{background:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink-2);margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.mini-list{font-size:13px}
+.mini-list div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.mini-list div:last-child{border-bottom:0}
+
+/* phone */
+.phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin:18px 0}
+.phone{width:250px;background:var(--surface);border:1px solid var(--line);border-radius:30px;padding:12px;box-shadow:var(--shadow)}
+.phone .screen{border-radius:20px;background:var(--surface-2);padding:14px;min-height:430px;display:flex;flex-direction:column;gap:10px;font-size:12.5px}
+.phone .notch{width:70px;height:6px;border-radius:3px;background:var(--line);margin:0 auto 6px}
+.phone .hello{font-size:12px;color:var(--ink-3)}
+.phone .name{font-weight:700;font-size:16px}
+.phone .shift{background:var(--surface);border-radius:12px;padding:10px;border:1px solid var(--line)}
+.phone .big-btn{background:var(--accent);color:var(--accent-ink);border-radius:999px;text-align:center;padding:14px;font-weight:700;font-size:14px}
+.phone .row{display:flex;justify-content:space-between}
+.selfie{height:150px;border-radius:12px;background:linear-gradient(135deg,var(--accent-soft),var(--surface));position:relative;display:grid;place-items:center;color:var(--ink-3);border:1px solid var(--line)}
+.selfie .wm{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-family:var(--mono);font-size:9.5px;padding:5px 8px;border-radius:0 0 12px 12px;line-height:1.4}
+.sms{background:var(--surface);border:1px solid var(--line);border-radius:12px 12px 12px 4px;padding:8px 10px;font-size:12px;line-height:1.45}
+.sms small{display:block;color:var(--ink-3);font-size:10.5px;margin-top:4px;font-family:var(--mono)}
+.sms.fail{border-color:var(--bad)}
+.sms.fail small{color:var(--bad)}
+.bal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bal div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.bal b{display:block;font-size:18px}
+
+/* gantt */
+.gantt{display:grid;grid-template-columns:200px repeat(4,minmax(0,1fr));font-size:13px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.gantt > div{padding:10px 12px;border-bottom:1px solid var(--line)}
+.gantt .gh{background:var(--surface-2);font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.gantt .lab{font-weight:600}
+.gantt .lab small{display:block;font-weight:400;color:var(--ink-3);font-size:12px}
+.gantt .track{grid-column:2 / -1;display:grid;grid-template-columns:repeat(4,1fr);padding:10px 8px;align-items:center}
+.gantt .blk{border-radius:7px;padding:6px 10px;font-size:12px;font-weight:600;line-height:1.35;margin:0 3px}
+
+/* entity cards */
+.ent{font-size:13px;padding:0;overflow:hidden}
+.ent h4{padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;font-weight:500;margin:0;display:flex;justify-content:space-between}
+.ent h4 small{color:var(--ink-3);font-family:var(--sans)}
+.ent ul{list-style:none;padding:8px 14px 12px;margin:0}
+.ent li{display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.ent li em{font-style:normal;color:var(--ink-3)}
+.ent li.pk{color:var(--accent)} .ent li.fk{color:var(--violet)}
+.group-label{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 10px}
+
+/* svg styles */
+.sv-node{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.sv-node2{fill:var(--surface-2);stroke:var(--line);stroke-width:1}
+.sv-acc{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+.sv-ok{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.2}
+.sv-warn{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.2}
+.sv-bad{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2}
+.sv-vio{fill:var(--violet-soft);stroke:var(--violet);stroke-width:1.2}
+.sv-frame{fill:none;stroke:var(--accent);stroke-width:1.2;stroke-dasharray:5 4}
+.sv-t{fill:var(--ink);font:600 13px var(--sans)}
+.sv-ts{fill:var(--ink-2);font:400 11.5px var(--sans)}
+.sv-tm{fill:var(--ink-3);font:500 11px var(--mono)}
+.sv-tacc{fill:var(--accent);font:600 12px var(--mono);letter-spacing:.05em}
+.sv-edge{stroke:var(--ink-3);stroke-width:1.4;fill:none}
+.sv-edge-acc{stroke:var(--accent);stroke-width:1.6;fill:none}
+.sv-dash{stroke-dasharray:4 4}
+.sv-arrow{fill:var(--ink-3)}
+.sv-arrow-acc{fill:var(--accent)}
+.sv-axis{stroke:var(--line);stroke-width:1}
+.f-ok{fill:var(--ok)} .f-warn{fill:var(--warn)} .f-bad{fill:var(--bad)} .f-acc{fill:var(--accent)} .f-vio{fill:var(--violet)} .f-ink3{fill:var(--ink-3)}
+.t-ok{fill:var(--ok)} .t-warn{fill:var(--warn)} .t-bad{fill:var(--bad)} .t-vio{fill:var(--violet)}
+
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qa div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.qa div b{display:block;font-size:13px;color:var(--accent);font-family:var(--mono);font-weight:500;margin-bottom:2px}
+
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+
+@media (max-width: 980px){
+  .layout{grid-template-columns:1fr;gap:0;padding:0 16px}
+  nav.toc{position:static;height:auto;padding:20px 0 0}
+  nav.toc ol{display:flex;flex-wrap:wrap;gap:4px}
+  nav.toc a{padding:4px 8px;font-size:12.5px;background:var(--surface);border:1px solid var(--line)}
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width: 720px){
+  body{font-size:15px}
+  header.hero{padding:24px 20px 20px}
+  header.hero h1{font-size:26px}
+  .g2,.g3,.g4,.scope,.qa{grid-template-columns:1fr}
+  .g4.keep2{grid-template-columns:1fr 1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gantt{grid-template-columns:110px repeat(4,minmax(0,1fr));font-size:12px}
+  .gantt .blk{font-size:10.5px;padding:4px 6px}
+  .figure{padding:14px 12px 10px}
+  .bars{grid-template-columns:80px 1fr 30px}
+}
+@media print{
+  nav.toc,.theme-btn{display:none}
+  .layout{display:block;max-width:none;padding:0}
+  body{background:#fff;font-size:12.5px}
+  .card,.figure,.table-wrap,.mock,.phone,.gantt,header.hero{box-shadow:none}
+  section{break-inside:auto}
+  .figure,.feature,.card,.phone{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc" aria-label="Contents">
+  <div class="brand">Agam Ops Platform</div>
+  <div class="sub">Project document · v1.0</div>
+  <ol>
+    <li><a href="#overview"><span>01</span>Overview</a></li>
+    <li><a href="#scope"><span>02</span>Scope</a></li>
+    <li><a href="#roles"><span>03</span>Users &amp; roles</a></li>
+    <li><a href="#architecture"><span>04</span>Architecture</a></li>
+    <li><a href="#employees"><span>05</span>Employees &amp; attendance</a></li>
+    <li><a href="#leave"><span>06</span>Leave management</a></li>
+    <li><a href="#visits"><span>07</span>Field visits &amp; map</a></li>
+    <li><a href="#clients"><span>08</span>Clients &amp; AMC</a></li>
+    <li><a href="#messaging"><span>09</span>Client messaging</a></li>
+    <li><a href="#dashboard"><span>10</span>Admin dashboard</a></li>
+    <li><a href="#data"><span>11</span>Data model</a></li>
+    <li><a href="#security"><span>12</span>Integrity &amp; security</a></li>
+    <li><a href="#stack"><span>13</span>Tech stack &amp; costs</a></li>
+    <li><a href="#plan"><span>14</span>Delivery plan</a></li>
+    <li><a href="#questions"><span>15</span>Open questions</a></li>
+  </ol>
+  <button class="theme-btn" type="button" id="themeBtn">Toggle light / dark</button>
+</nav>
+
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Project document</div>
+  <h1>Attendance, Field Visit &amp; Client Messaging System</h1>
+  <p class="lede">One web app, installable on any phone, that tracks who came to work and when, logs every field sales and service visit on a map, manages leave and staff records, keeps every client and AMC contract in one place, and sends the right SMS to the right client at the right time.</p>
+  <div class="meta">
+    <div>Prepared for<b>Agam Water Industries</b></div>
+    <div>Prepared by<b>Doozer Studios</b></div>
+    <div>Version<b>1.0 · 22 Nov 2026</b></div>
+    <div>Based on<b>Proposal dated 6 Nov 2026</b></div>
+  </div>
+</header>
+
+<!-- 01 OVERVIEW -->
+<section id="overview">
+  <div class="sec-head"><span class="num">01</span><h2>Overview</h2></div>
+  <p>Agam Water runs an office team, a field sales team and AMC service technicians, and serves a growing list of clients with installed RO plants. Today attendance, leave, client records and service reminders live in different places, often on paper or in personal phones. This project brings them into <b>three connected modules</b> on one platform:</p>
+  <div class="grid g3">
+    <div class="feature">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 11l2 2 4-4"/></svg></div>
+      <div><h4>A · Attendance &amp; employee management</h4>
+        <p>Staff records, selfie + GPS check-in, live headcount, shifts and late rules, leave balances and approvals, payroll-ready monthly reports.</p></div>
+    </div>
+    <div class="feature">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></div>
+      <div><h4>B · Field visits &amp; visit map</h4>
+        <p>Sales agents and technicians log each client stop with GPS, time and photo. Admins see the day's route on a map and verify or reject each visit.</p></div>
+    </div>
+    <div class="feature">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></div>
+      <div><h4>C · Client management &amp; messaging</h4>
+        <p>Client and site directory, installed plants, AMC contracts and service schedules, technician assignment, and automatic SMS reminders (demo SMS API in this phase).</p></div>
+    </div>
+  </div>
+  <div class="grid g4 keep2" style="margin-top:16px">
+    <div class="card stat"><div class="v">40</div><div class="l">staff accounts at launch (can grow)</div></div>
+    <div class="card stat"><div class="v">4</div><div class="l">user roles with separate permissions</div></div>
+    <div class="card stat"><div class="v">∞</div><div class="l">client, contract and SMS records</div></div>
+    <div class="card stat"><div class="v">0</div><div class="l">app store installs: it's a PWA</div></div>
+  </div>
+</section>
+
+<!-- 02 SCOPE -->
+<section id="scope">
+  <div class="sec-head"><span class="num">02</span><h2>Scope</h2></div>
+  <p class="muted">This document covers the attendance, field visit and client messaging parts of the original proposal. Features marked <span class="pill acc">added</span> are recommendations beyond the proposal that a business of this size usually needs.</p>
+  <div class="scope">
+    <div class="card">
+      <h4><span class="pill ok">In scope</span></h4>
+      <ul>
+        <li>Employee master records &amp; departments <span class="pill acc">added</span></li>
+        <li>Shifts, grace time, late &amp; half-day rules <span class="pill acc">added</span></li>
+        <li>Selfie + GPS + server-time check-in / check-out</li>
+        <li>Office geofence check <span class="pill acc">added</span></li>
+        <li>Live headcount &amp; daily attendance roster</li>
+        <li>Missed-punch regularisation requests <span class="pill acc">added</span></li>
+        <li>Leave types, balances, accrual, approvals, holidays</li>
+        <li>Field sales &amp; service visit logger (GPS, time, photo)</li>
+        <li>Admin visit map, agent day route, verify / reject queue</li>
+        <li>Visit outcomes &amp; follow-up reminders <span class="pill acc">added</span></li>
+        <li>Client, contact &amp; site directory</li>
+        <li>Installed plant (asset) records</li>
+        <li>AMC contracts, service schedule, technician roster</li>
+        <li>Service complaints / tickets <span class="pill acc">added</span></li>
+        <li>Automatic, manual &amp; scheduled SMS on a <b>demo SMS API</b> with in-app inbox and logs</li>
+        <li>Admin dashboard, role-based access, CSV/Excel exports</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="pill neu">Out of scope for this document</span></h4>
+      <ul>
+        <li>Interactive 3D RO plant model (Three.js)</li>
+        <li>Live SMS gateway account and DLT template registration (later phase, see §09)</li>
+        <li>Salary calculation and payslips (we export payroll-ready data; payroll runs in the existing tool)</li>
+        <li>WhatsApp messaging (possible later phase, see §09)</li>
+        <li>Native Play Store / App Store apps</li>
+        <li>Billing, invoicing and GST filing</li>
+      </ul>
+      <div class="callout small" style="margin-bottom:0">The 3D model can still be built on the same platform later. The data model below leaves room for them.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 ROLES -->
+<section id="roles">
+  <div class="sec-head"><span class="num">03</span><h2>Users &amp; roles</h2></div>
+  <p>Every login has exactly one role. The role decides which screens appear and which records can be seen or changed. Office Admin is a new role for HR/accounts staff who should manage people and clients without owning the whole system.</p>
+  <div class="grid g4">
+    <div class="card"><span class="pill vio">Super Admin</span><p class="small muted" style="margin-bottom:0">Owner / management. Sees everything, changes settings, policies, roles and SMS templates.</p></div>
+    <div class="card"><span class="pill acc">Office Admin</span><p class="small muted" style="margin-bottom:0">HR, accounts or office manager. Manages staff, approves leave, manages clients and sends messages.</p></div>
+    <div class="card"><span class="pill ok">Employee</span><p class="small muted" style="margin-bottom:0">Office and sales staff. Checks in and out, applies for leave, sees own history.</p></div>
+    <div class="card"><span class="pill warn">AMC Technician</span><p class="small muted" style="margin-bottom:0">Everything an employee can do, plus their assigned service visits and client details for those visits.</p></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Capability</th><th class="c">Super Admin</th><th class="c">Office Admin</th><th class="c">Employee</th><th class="c">Technician</th></tr></thead>
+      <tbody>
+        <tr><td>Check in / out, view own attendance</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Apply for leave, see own balance</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Approve leave &amp; regularisation</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c part">◐ if manager</td><td class="c no">—</td></tr>
+        <tr><td>Log field visits (own)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c part">◐ field staff</td><td class="c yes">✓</td></tr>
+        <tr><td>Visit map, verify / reject visits</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c part">◐ if manager</td><td class="c no">—</td></tr>
+        <tr><td>Add / edit employees</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>Edit attendance manually (audited)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>Shift, leave &amp; holiday policies</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>View &amp; edit clients, sites, contracts</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c part">◐ assigned only, read</td></tr>
+        <tr><td>Update service visit outcome</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c yes">✓ own visits</td></tr>
+        <tr><td>Send manual / bulk SMS</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>Manage SMS templates &amp; automation rules</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>Exports (attendance, clients, AMC)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td></tr>
+        <tr><td>Users, roles, audit log</td><td class="c yes">✓</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 04 ARCHITECTURE -->
+<section id="architecture">
+  <div class="sec-head"><span class="num">04</span><h2>Architecture</h2></div>
+  <p>A single Next.js application serves both the mobile staff app and the admin portal. MySQL holds all records, Cloudflare R2 stores check-in and visit photos, and OpenStreetMap draws the visit map. SMS go to a built-in demo SMS API for now. A scheduled job runs daily to work out which reminders are due.</p>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 420" role="img" aria-label="System architecture diagram">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker>
+        <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow-acc"/></marker>
+      </defs>
+      <!-- users -->
+      <text x="20" y="40" class="sv-tacc">PEOPLE</text>
+      <rect x="20" y="70" width="190" height="52" rx="10" class="sv-node"/>
+      <text x="36" y="92" class="sv-t">Office &amp; sales staff</text><text x="36" y="110" class="sv-ts">phone · installed PWA</text>
+      <rect x="20" y="138" width="190" height="52" rx="10" class="sv-node"/>
+      <text x="36" y="160" class="sv-t">AMC technicians</text><text x="36" y="178" class="sv-ts">phone · installed PWA</text>
+      <rect x="20" y="206" width="190" height="52" rx="10" class="sv-node"/>
+      <text x="36" y="228" class="sv-t">Admin / HR / owner</text><text x="36" y="246" class="sv-ts">laptop or phone browser</text>
+
+      <!-- app frame -->
+      <rect x="250" y="20" width="380" height="384" rx="14" class="sv-frame"/>
+      <text x="270" y="44" class="sv-tacc">NEXT.JS APP · HOSTINGER</text>
+      <rect x="270" y="62" width="340" height="50" rx="9" class="sv-acc"/>
+      <text x="286" y="83" class="sv-t">Staff app</text><text x="286" y="100" class="sv-ts">check-in, leave, log field visits, my history</text>
+      <rect x="270" y="126" width="340" height="50" rx="9" class="sv-acc"/>
+      <text x="286" y="147" class="sv-t">Admin portal</text><text x="286" y="164" class="sv-ts">people, attendance, visit map, clients, SMS</text>
+      <rect x="270" y="196" width="340" height="56" rx="9" class="sv-node"/>
+      <text x="286" y="219" class="sv-t">API layer</text><text x="286" y="237" class="sv-ts">login, role checks, validation, audit log</text>
+      <rect x="270" y="268" width="164" height="62" rx="9" class="sv-node"/>
+      <text x="284" y="292" class="sv-t">Rules engine</text><text x="284" y="310" class="sv-ts">late, half-day,</text><text x="284" y="324" class="sv-ts">leave balance</text>
+      <rect x="446" y="268" width="164" height="62" rx="9" class="sv-node"/>
+      <text x="460" y="292" class="sv-t">Scheduler (cron)</text><text x="460" y="310" class="sv-ts">daily reminders,</text><text x="460" y="324" class="sv-ts">accruals, auto-absent</text>
+      <rect x="270" y="346" width="340" height="40" rx="9" class="sv-node2"/>
+      <text x="286" y="371" class="sv-ts">Server clock is the only source of time for every record</text>
+
+      <path d="M210 96 H268" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M210 164 C240 164 240 104 268 100" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M210 232 C240 232 240 156 268 152" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M440 112 V124" class="sv-edge"/>
+      <path d="M440 176 V194" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M352 252 V266" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M528 252 V266" class="sv-edge" marker-end="url(#ar)"/>
+
+      <!-- services -->
+      <text x="690" y="20" class="sv-tacc" dy="0">SERVICES</text>
+      <rect x="690" y="30" width="190" height="56" rx="10" class="sv-node"/>
+      <text x="706" y="53" class="sv-t">MySQL 8</text><text x="706" y="71" class="sv-ts">all records</text>
+      <rect x="690" y="110" width="190" height="56" rx="10" class="sv-node"/>
+      <text x="706" y="133" class="sv-t">Cloudflare R2</text><text x="706" y="151" class="sv-ts">selfies &amp; visit photos</text>
+      <rect x="690" y="190" width="190" height="56" rx="10" class="sv-node"/>
+      <text x="706" y="213" class="sv-t">OpenStreetMap</text><text x="706" y="231" class="sv-ts">visit map &amp; check-in pins</text>
+      <rect x="690" y="270" width="190" height="56" rx="10" class="sv-warn"/>
+      <text x="706" y="293" class="sv-t">SMS API (demo)</text><text x="706" y="311" class="sv-ts">mock gateway, swappable</text>
+      <rect x="690" y="350" width="190" height="52" rx="10" class="sv-node2"/>
+      <text x="706" y="372" class="sv-t">Demo SMS inbox</text><text x="706" y="389" class="sv-ts">what clients would get</text>
+
+      <path d="M610 214 C650 214 650 58 688 58" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M610 222 C655 222 655 138 688 138" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M610 230 C650 230 650 218 688 218" class="sv-edge" marker-end="url(#ar)"/>
+      <path d="M610 299 H688" class="sv-edge-acc" marker-end="url(#ara)"/>
+      <path d="M785 326 V348" class="sv-edge-acc" marker-end="url(#ara)"/>    </svg>
+    </div>
+    <div class="cap"><b>Fig 1</b> One app, one database. Teal arrows show the SMS path.</div>
+  </div>
+</section>
+
+<!-- 05 EMPLOYEES & ATTENDANCE -->
+<section id="employees">
+  <div class="sec-head"><span class="num">05</span><h2>Employee &amp; attendance management</h2></div>
+
+  <h3>5.1 Employee records</h3>
+  <p>Each employee has one profile that every other feature reads from: attendance rules come from their shift, leave quota from their leave policy, and approvals go to their reporting manager.</p>
+  <div class="grid g3">
+    <div class="feature" style="grid-template-columns:1fr"><div><h4>Profile</h4><ul>
+      <li>Employee code, name, photo</li><li>Mobile (login), email</li><li>Department &amp; designation</li><li>Date of joining, date of birth</li><li>Emergency contact, address</li></ul></div></div>
+    <div class="feature" style="grid-template-columns:1fr"><div><h4>Work setup</h4><ul>
+      <li>Role (see §03)</li><li>Assigned shift &amp; weekly off</li><li>Work type: office / field / both</li><li>Allowed check-in location(s)</li><li>Reporting manager</li></ul></div></div>
+    <div class="feature" style="grid-template-columns:1fr"><div><h4>Status &amp; documents</h4><ul>
+      <li>Active · On notice · Inactive</li><li>Leave policy &amp; opening balances</li><li>ID / documents upload (optional)</li><li>Monthly salary basis for exports</li><li>Full change history</li></ul></div></div>
+  </div>
+  <div class="callout">Leaving staff are marked <b>Inactive</b>, never deleted, so their past attendance stays in reports and their login stops working the same day.</div>
+
+  <h3>5.2 Daily check-in, step by step</h3>
+  <p>Check-in takes one tap and about ten seconds. Everything after the tap happens automatically.</p>
+  <div class="flow">
+    <div class="step"><span class="n">01</span><b>Tap "Check in"</b><span>Staff app on home screen shows today's shift.</span></div>
+    <div class="step"><span class="n">02</span><b>Live selfie</b><span>Front camera opens. Gallery upload is blocked.</span></div>
+    <div class="step"><span class="n">03</span><b>GPS lock</b><span>Location and accuracy radius captured.</span></div>
+    <div class="step"><span class="n">04</span><b>Location check</b><span>Inside office radius, or field staff allowed anywhere.</span></div>
+    <div class="step"><span class="n">05</span><b>Watermark</b><span>Server time + coordinates burned onto the photo.</span></div>
+    <div class="step"><span class="n">06</span><b>Status set</b><span>On time, Late or Half-day by shift rules.</span></div>
+  </div>
+  <div class="flow plain" style="margin-top:10px">
+    <div class="step alert"><b>Weak GPS (radius &gt; 100 m)</b><span>Asked to retry; if still weak, check-in is saved but flagged for admin review.</span></div>
+    <div class="step alert"><b>Outside office radius</b><span>Office staff can still check in, but the record is flagged with distance from office.</span></div>
+    <div class="step alert"><b>Forgot to check out</b><span>Reminder at shift end + 1 h. At midnight record becomes "Missed punch".</span></div>
+  </div>
+
+  <div class="phones">
+    <div class="phone" aria-label="Staff app home screen mockup">
+      <div class="notch"></div>
+      <div class="screen">
+        <div><div class="hello">Good morning</div><div class="name">Ravi Kumar</div></div>
+        <div class="shift">
+          <div class="row"><span class="muted">General shift</span><span class="pill ok">On time</span></div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px">09:38 AM</div>
+          <div class="muted">Checked in · Main office</div>
+        </div>
+        <div class="shift"><div class="row"><span>Hours today</span><b>3h 12m</b></div><div class="row muted"><span>Shift ends</span><span>6:30 PM</span></div></div>
+        <div class="big-btn">Check out</div>
+        <div class="bal"><div><b>6</b>Casual</div><div><b>4</b>Sick</div><div><b>11</b>Earned</div></div>
+        <div class="row muted" style="margin-top:auto"><span>Home</span><span>Leave</span><span>History</span><span>Profile</span></div>
+      </div>
+    </div>
+    <div class="phone" aria-label="Selfie capture screen mockup">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="name">Check in</div>
+        <div class="selfie">live camera preview
+          <div class="wm">22-11-2026 09:38:14 IST (server)<br>28.6139°N 77.2090°E · ±12 m<br>Agam Water · Main office</div>
+        </div>
+        <div class="shift"><div class="row"><span>Location</span><span class="pill ok">Inside office</span></div><div class="row muted"><span>Accuracy</span><span>±12 m</span></div></div>
+        <div class="big-btn">Confirm check-in</div>
+        <div class="muted small" style="text-align:center">Photo is stamped and uploaded. It cannot be edited afterwards.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>5.3 Shift rules &amp; attendance status</h3>
+  <p>Admins set shifts once; the system applies them to every check-in. The example below uses a 9:30–6:30 general shift. All thresholds are editable per shift.</p>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 210" role="img" aria-label="Timeline of a working day showing grace, late and half-day windows">
+      <!-- axis 8:00..20:00 => x 40..860, 68.33/hr -->
+      <rect x="142.5" y="40" width="615" height="26" rx="6" class="sv-acc"/>
+      <text x="152" y="58" class="sv-t">Shift 9:30 AM – 6:30 PM (1 h break)</text>
+      <rect x="142.5" y="80" width="17" height="30" class="f-ok"/>
+      <rect x="159.5" y="80" width="85.5" height="30" class="f-warn"/>
+      <rect x="245" y="80" width="512.5" height="30" class="f-bad" opacity=".85"/>
+      <rect x="791.7" y="80" width="68.3" height="30" class="f-vio"/>
+      <text x="252" y="100" fill="#fff" style="font:600 12px var(--sans)">Check-in after 11:00 → Half-day</text>
+      <text x="798" y="100" fill="#fff" style="font:600 12px var(--sans)">Overtime</text>
+      <!-- labels above/below -->
+      <path d="M151 112 V128" class="sv-edge"/><text x="104" y="142" class="sv-ts t-ok" style="font-weight:600">9:30–9:45 grace</text><text x="104" y="157" class="sv-ts">= On time</text>
+      <path d="M202 112 V170" class="sv-edge"/><text x="190" y="184" class="sv-ts t-warn" style="font-weight:600">9:46–11:00 = Late</text><text x="190" y="199" class="sv-ts">3 lates / month = ½ day cut</text>
+      <path d="M826 112 V128" class="sv-edge"/><text x="740" y="142" class="sv-ts t-vio" style="font-weight:600">After 7:00 PM</text><text x="740" y="157" class="sv-ts">counted as OT</text>
+      <!-- axis -->
+      <line x1="40" y1="124" x2="860" y2="124" class="sv-axis" opacity="0"/>
+      <g class="sv-tm">
+        <text x="40" y="24" text-anchor="middle">8</text><text x="108.3" y="24" text-anchor="middle">9</text><text x="176.7" y="24" text-anchor="middle">10</text><text x="245" y="24" text-anchor="middle">11</text><text x="313.3" y="24" text-anchor="middle">12</text><text x="381.7" y="24" text-anchor="middle">1</text><text x="450" y="24" text-anchor="middle">2</text><text x="518.3" y="24" text-anchor="middle">3</text><text x="586.7" y="24" text-anchor="middle">4</text><text x="655" y="24" text-anchor="middle">5</text><text x="723.3" y="24" text-anchor="middle">6</text><text x="791.7" y="24" text-anchor="middle">7</text><text x="860" y="24" text-anchor="middle">8 PM</text>
+      </g>
+      <g class="sv-axis"><line x1="40" y1="30" x2="40" y2="34"/><line x1="108.3" y1="30" x2="108.3" y2="34"/><line x1="176.7" y1="30" x2="176.7" y2="34"/><line x1="245" y1="30" x2="245" y2="34"/><line x1="313.3" y1="30" x2="313.3" y2="34"/><line x1="381.7" y1="30" x2="381.7" y2="34"/><line x1="450" y1="30" x2="450" y2="34"/><line x1="518.3" y1="30" x2="518.3" y2="34"/><line x1="586.7" y1="30" x2="586.7" y2="34"/><line x1="655" y1="30" x2="655" y2="34"/><line x1="723.3" y1="30" x2="723.3" y2="34"/><line x1="791.7" y1="30" x2="791.7" y2="34"/><line x1="860" y1="30" x2="860" y2="34"/><line x1="40" y1="32" x2="860" y2="32"/></g>
+      <text x="400" y="150" class="sv-ts">Worked &lt; 4.5 h → Half-day · Worked &lt; 2 h → Absent</text>
+      <text x="400" y="167" class="sv-ts">No check-out by midnight → Missed punch</text>
+    </svg>
+    </div>
+    <div class="cap"><b>Fig 2</b> Example rules for one shift. Night or split shifts get their own rules.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>When it's set</th><th>Counts as</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill ok">Present</span></td><td>Checked in within grace and worked full hours</td><td>1 day</td></tr>
+        <tr><td><span class="pill warn">Late</span></td><td>Checked in after grace, before half-day cutoff</td><td>1 day (late counter +1)</td></tr>
+        <tr><td><span class="pill warn">Half-day</span></td><td>Late beyond cutoff, short hours, or approved half-day leave</td><td>½ day</td></tr>
+        <tr><td><span class="pill bad">Absent</span></td><td>No check-in and no approved leave on a working day (set by nightly job)</td><td>0 / loss of pay</td></tr>
+        <tr><td><span class="pill vio">On leave</span></td><td>Approved leave covers the day</td><td>Paid or unpaid by leave type</td></tr>
+        <tr><td><span class="pill neu">Holiday · Week off</span></td><td>From the holiday calendar and the employee's weekly off</td><td>Paid, not a working day</td></tr>
+        <tr><td><span class="pill bad">Missed punch</span></td><td>Checked in but never checked out</td><td>Pending until regularised</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>5.4 Corrections &amp; regularisation</h3>
+  <div class="grid g2">
+    <div class="card"><h4>Employee requests</h4><p class="small muted" style="margin:0">Missed check-out, wrong status or on-duty outside office (client meeting, training). The employee gives a time and reason; the manager approves or rejects; the day is recalculated.</p></div>
+    <div class="card"><h4>Admin edits</h4><p class="small muted" style="margin:0">Admins can override any day, but must enter a reason. The original value, new value, who and when are kept in the audit log and shown on the record.</p></div>
+  </div>
+
+  <h3>5.5 Headcount &amp; reports</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Live headcount</h4>
+      <ul class="small muted" style="margin-bottom:0">
+        <li>Total active staff, present now, late, on leave, absent, not yet checked in</li>
+        <li>Split by department and by office / field</li>
+        <li>Tap any number to see the names and their check-in photos</li>
+        <li>Flagged check-ins (weak GPS, outside office) in a review queue</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Reports &amp; exports (CSV / Excel)</h4>
+      <ul class="small muted" style="margin-bottom:0">
+        <li><b>Monthly muster roll</b>: one row per employee, one column per day</li>
+        <li><b>Payroll summary</b>: paid days, loss-of-pay days, lates, overtime hours</li>
+        <li>Late-comers and early-leavers report</li>
+        <li>Leave register and balance statement</li>
+        <li>Employee directory and headcount trend</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 06 LEAVE -->
+<section id="leave">
+  <div class="sec-head"><span class="num">06</span><h2>Leave management</h2></div>
+  <p>Leave is set up as policies. Each employee is attached to one policy, which decides their leave types, yearly quota, how leave builds up and what carries forward.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Leave type</th><th>Example quota</th><th>Builds up</th><th>Carry forward</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill acc">Casual (CL)</span></td><td>8 / year</td><td>Credited on 1 Jan</td><td>No, lapses</td><td>Max 2 days in a row</td></tr>
+        <tr><td><span class="pill warn">Sick (SL)</span></td><td>6 / year</td><td>Credited on 1 Jan</td><td>No, lapses</td><td>Certificate required above 2 days</td></tr>
+        <tr><td><span class="pill ok">Earned / Paid (PL)</span></td><td>15 / year</td><td>1.25 per month</td><td>Up to 30 days</td><td>Apply 7 days ahead</td></tr>
+        <tr><td><span class="pill vio">Comp-off</span></td><td>Earned</td><td>On approved holiday work</td><td>Expires in 60 days</td><td>Admin grants it</td></tr>
+        <tr><td><span class="pill neu">Leave without pay</span></td><td>Unlimited</td><td>—</td><td>—</td><td>Used when balance is zero</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">Quotas above are placeholders. Agam Water's actual policy will be configured at setup (see §15).</p>
+
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 250" role="img" aria-label="Leave request workflow">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker>
+      </defs>
+      <rect x="20" y="96" width="130" height="56" rx="28" class="sv-node"/>
+      <text x="85" y="120" text-anchor="middle" class="sv-t">Employee</text><text x="85" y="137" text-anchor="middle" class="sv-ts">applies in app</text>
+
+      <rect x="200" y="96" width="140" height="56" rx="10" class="sv-warn"/>
+      <text x="270" y="120" text-anchor="middle" class="sv-t">Pending</text><text x="270" y="137" text-anchor="middle" class="sv-ts">manager notified</text>
+
+      <rect x="400" y="30" width="140" height="56" rx="10" class="sv-ok"/>
+      <text x="470" y="54" text-anchor="middle" class="sv-t">Approved</text><text x="470" y="71" text-anchor="middle" class="sv-ts">by manager / admin</text>
+
+      <rect x="400" y="162" width="140" height="56" rx="10" class="sv-bad"/>
+      <text x="470" y="186" text-anchor="middle" class="sv-t">Rejected</text><text x="470" y="203" text-anchor="middle" class="sv-ts">reason required</text>
+
+      <rect x="200" y="190" width="140" height="44" rx="10" class="sv-node2"/>
+      <text x="270" y="217" text-anchor="middle" class="sv-ts">Withdrawn by employee</text>
+
+      <rect x="600" y="14" width="280" height="96" rx="10" class="sv-node"/>
+      <text x="616" y="38" class="sv-t">What happens automatically</text>
+      <text x="616" y="58" class="sv-ts">• Balance reduced by the days taken</text>
+      <text x="616" y="76" class="sv-ts">• Roster marked "On leave" for those dates</text>
+      <text x="616" y="94" class="sv-ts">• Employee notified in app</text>
+
+      <rect x="600" y="152" width="280" height="76" rx="10" class="sv-node"/>
+      <text x="616" y="176" class="sv-t">Balance unchanged</text>
+      <text x="616" y="196" class="sv-ts">• Employee notified with the reason</text>
+      <text x="616" y="214" class="sv-ts">• Can re-apply for other dates</text>
+
+      <path d="M150 124 H198" class="sv-edge" marker-end="url(#ar2)"/>
+      <path d="M340 116 C370 116 370 58 398 58" class="sv-edge" marker-end="url(#ar2)"/>
+      <path d="M340 132 C370 132 370 190 398 190" class="sv-edge" marker-end="url(#ar2)"/>
+      <path d="M270 152 V188" class="sv-edge sv-dash" marker-end="url(#ar2)"/>
+      <path d="M540 58 H598" class="sv-edge" marker-end="url(#ar2)"/>
+      <path d="M540 190 H598" class="sv-edge" marker-end="url(#ar2)"/>
+      <text x="410" y="122" class="sv-tm">Cancel before start date → balance restored</text>
+    </svg>
+    </div>
+    <div class="cap"><b>Fig 3</b> Leave request lifecycle. Unanswered requests remind the approver after 24 h.</div>
+  </div>
+
+  <div class="grid g3">
+    <div class="card"><h4>For employees</h4><ul class="small muted" style="margin-bottom:0"><li>See balances by type</li><li>Full-day, half-day or multi-day</li><li>Attach a document</li><li>Track status, withdraw if pending</li></ul></div>
+    <div class="card"><h4>For approvers</h4><ul class="small muted" style="margin-bottom:0"><li>One-tap approve / reject</li><li>See who else is off those days</li><li>Team leave calendar</li><li>Weekends &amp; holidays auto-excluded</li></ul></div>
+    <div class="card"><h4>For admins</h4><ul class="small muted" style="margin-bottom:0"><li>Holiday calendar per year</li><li>Monthly accrual &amp; year-end carry forward run automatically</li><li>Manual balance adjustment with reason</li><li>Leave register export</li></ul></div>
+  </div>
+</section>
+
+<!-- 07 FIELD VISITS -->
+<section id="visits">
+  <div class="sec-head"><span class="num">07</span><h2>Field sales &amp; service visits</h2></div>
+  <p>Sales agents and AMC technicians spend most of the day at client sites. They log each stop from their phone when they arrive. Admins then see every stop on a map and mark it <span class="pill ok">Verified</span> or <span class="pill bad">Rejected</span> with a remark.</p>
+
+  <h3>7.1 Logging a visit</h3>
+  <div class="flow">
+    <div class="step"><span class="n">01</span><b>Arrive on site</b><span>Field staff are already checked in for the day.</span></div>
+    <div class="step"><span class="n">02</span><b>Tap "Log visit"</b><span>One button on the staff app home screen.</span></div>
+    <div class="step"><span class="n">03</span><b>Pick the client</b><span>Search existing clients, or add a new prospect.</span></div>
+    <div class="step"><span class="n">04</span><b>GPS + server time</b><span>Pin, accuracy and time captured automatically.</span></div>
+    <div class="step"><span class="n">05</span><b>Details &amp; photo</b><span>Purpose, person met, notes, outcome, optional site photo.</span></div>
+    <div class="step"><span class="n">06</span><b>Sent for review</b><span>Appears as Pending in the admin queue and map.</span></div>
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h4>What a visit records</h4><ul class="small muted" style="margin-bottom:0">
+      <li>Client or new prospect name</li><li>Purpose: sales pitch, demo, follow-up, AMC service, complaint, payment collection, installation</li><li>Person met and their phone</li><li>Notes and an optional photo (watermarked like check-in selfies)</li><li>GPS pin, accuracy and server time</li></ul></div>
+    <div class="card"><h4>Outcome &amp; follow-up <span class="pill acc">added</span></h4><ul class="small muted" style="margin-bottom:0">
+      <li>Outcome: interested, quotation requested, order won, not interested, revisit</li><li>Follow-up date creates a reminder for the agent</li><li>New prospects can be turned into clients in one click</li><li>Full visit history shows on the client's timeline</li></ul></div>
+    <div class="card"><h4>Automatic checks <span class="pill acc">added</span></h4><ul class="small muted" style="margin-bottom:0">
+      <li>Flagged if logged more than 500 m from the client's saved site pin</li><li>Flagged if GPS accuracy is weak</li><li>A technician's visit against a due AMC service marks that service done</li><li>Visits can't be logged while the employee is checked out</li></ul></div>
+  </div>
+
+  <h3>7.2 Admin visit map &amp; verification queue</h3>
+  <p>The map shows every logged stop as a pin coloured by status. Filtering to one agent and one day draws their route in time order, so gaps and long detours are easy to spot. Clicking a pin opens the visit with its photo, and the admin verifies or rejects it right there.</p>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 420" role="img" aria-label="Admin visit map mockup with route, pins and a verification panel">
+      <defs>
+        <clipPath id="mapclip"><rect x="10" y="50" width="590" height="360" rx="10"/></clipPath>
+        <path id="pin" d="M0 0 C-3 -8 -11 -12 -11 -21 A11 11 0 1 1 11 -21 C11 -12 3 -8 0 0Z"/>
+      </defs>
+      <!-- filter chips -->
+      <rect x="10" y="12" width="156" height="26" rx="13" class="sv-node"/><text x="24" y="29" class="sv-ts">Agent: Ravi Kumar ▾</text>
+      <rect x="174" y="12" width="104" height="26" rx="13" class="sv-node"/><text x="188" y="29" class="sv-ts">22 Nov 2026 ▾</text>
+      <rect x="286" y="12" width="92" height="26" rx="13" class="sv-node"/><text x="300" y="29" class="sv-ts">Status: All ▾</text>
+      <circle cx="400" cy="25" r="5" class="f-warn"/><text x="410" y="29" class="sv-ts">Pending</text>
+      <circle cx="470" cy="25" r="5" class="f-ok"/><text x="480" y="29" class="sv-ts">Verified</text>
+      <circle cx="540" cy="25" r="5" class="f-bad"/><text x="550" y="29" class="sv-ts">Rejected</text>
+
+      <!-- map -->
+      <rect x="10" y="50" width="590" height="360" rx="10" class="sv-node2"/>
+      <g clip-path="url(#mapclip)">
+        <ellipse cx="95" cy="385" rx="85" ry="38" class="f-ok" opacity=".12"/>
+        <ellipse cx="560" cy="80" rx="70" ry="40" class="f-acc" opacity=".12"/>
+        <g stroke="var(--surface)" fill="none" stroke-linecap="round">
+          <path d="M10 150 H600" stroke-width="14"/>
+          <path d="M10 300 C200 288 400 322 600 300" stroke-width="14"/>
+          <path d="M180 50 V410" stroke-width="14"/>
+          <path d="M430 50 C442 200 418 300 440 410" stroke-width="14"/>
+          <path d="M10 225 H180 M300 150 V300 M430 225 H600 M180 360 H430 M60 50 V150" stroke-width="7"/>
+        </g>
+        <!-- route -->
+        <path d="M180 150 L300 95 L430 165 L520 300 L300 252 L90 300" class="sv-edge-acc sv-dash" stroke-width="2.2"/>
+      </g>
+      <!-- office -->
+      <rect x="170" y="140" width="20" height="20" rx="4" class="f-acc"/>
+      <text x="120" y="182" class="sv-tm">Office · in 9:38</text>
+      <!-- pins -->
+      <g transform="translate(300 95)"><use href="#pin" class="f-ok"/><text y="-17" text-anchor="middle" fill="#fff" style="font:700 11px var(--sans)">1</text></g>
+      <text x="314" y="88" class="sv-tm">10:52</text>
+      <g transform="translate(430 165)"><use href="#pin" class="f-ok"/><text y="-17" text-anchor="middle" fill="#fff" style="font:700 11px var(--sans)">2</text></g>
+      <text x="444" y="160" class="sv-tm">11:47</text>
+      <circle cx="520" cy="279" r="20" fill="none" stroke="var(--warn)" stroke-width="2" opacity=".5"/>
+      <g transform="translate(520 300)"><use href="#pin" class="f-warn"/><text y="-17" text-anchor="middle" fill="#fff" style="font:700 11px var(--sans)">3</text></g>
+      <text x="544" y="300" class="sv-tm">12:40</text>
+      <g transform="translate(300 252)"><use href="#pin" class="f-warn"/><text y="-17" text-anchor="middle" fill="#fff" style="font:700 11px var(--sans)">4</text></g>
+      <text x="250" y="242" class="sv-tm">2:15</text>
+      <g transform="translate(90 300)"><use href="#pin" class="f-bad"/><text y="-17" text-anchor="middle" fill="#fff" style="font:700 11px var(--sans)">5</text></g>
+      <text x="40" y="322" class="sv-tm">4:05 · 1.2 km off site</text>
+      <rect x="22" y="62" width="168" height="26" rx="8" class="sv-node"/>
+      <text x="34" y="79" class="sv-ts">5 stops · 23 km · 6h 27m</text>
+
+      <!-- side panel -->
+      <rect x="620" y="10" width="270" height="400" rx="12" class="sv-node"/>
+      <text x="636" y="38" class="sv-tacc">STOP 3 · 12:40 PM</text>
+      <text x="636" y="62" class="sv-t">Sharma Dairy Pvt Ltd</text>
+      <text x="636" y="80" class="sv-ts">Purpose: RO plant demo</text>
+      <text x="636" y="96" class="sv-ts">Met: Mr. Sharma (owner)</text>
+      <rect x="636" y="108" width="238" height="108" rx="8" class="sv-node2"/>
+      <text x="755" y="160" text-anchor="middle" class="sv-tm">site photo</text>
+      <rect x="636" y="196" width="238" height="20" fill="#000" opacity=".55"/>
+      <text x="644" y="210" fill="#fff" style="font:500 9.5px var(--mono)">22-11-2026 12:40:07 IST · ±9 m</text>
+      <text x="636" y="240" class="sv-t" style="font-size:12px">Notes</text>
+      <text x="636" y="257" class="sv-ts">Interested in a 2,000 LPH plant.</text>
+      <text x="636" y="273" class="sv-ts">Wants a quotation by Friday.</text>
+      <rect x="636" y="284" width="138" height="22" rx="11" class="sv-ok"/>
+      <text x="705" y="299" text-anchor="middle" class="sv-ts t-ok" style="font-weight:600">Quotation requested</text>
+      <text x="636" y="326" class="sv-ts">40 m from client site · follow-up 28 Nov</text>
+      <rect x="636" y="342" width="114" height="34" rx="8" class="sv-ok"/>
+      <text x="693" y="364" text-anchor="middle" class="sv-t t-ok">Verify</text>
+      <rect x="760" y="342" width="114" height="34" rx="8" class="sv-bad"/>
+      <text x="817" y="364" text-anchor="middle" class="sv-t t-bad">Reject…</text>
+      <text x="636" y="396" class="sv-tm">Reject needs a remark</text>
+    </svg>
+    </div>
+    <div class="cap"><b>Fig 4</b> Admin visit map for one agent's day. Pins follow the route in time order.</div>
+  </div>
+
+  <div class="figure" style="padding-bottom:16px">
+    <svg viewBox="0 0 900 120" role="img" aria-label="Visit status flow">
+      <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker></defs>
+      <rect x="20" y="38" width="150" height="48" rx="24" class="sv-node"/><text x="95" y="67" text-anchor="middle" class="sv-t">Visit logged</text>
+      <rect x="250" y="38" width="170" height="48" rx="10" class="sv-warn"/><text x="335" y="60" text-anchor="middle" class="sv-t">Pending</text><text x="335" y="76" text-anchor="middle" class="sv-ts">auto-flags shown</text>
+      <rect x="520" y="8" width="170" height="44" rx="10" class="sv-ok"/><text x="605" y="35" text-anchor="middle" class="sv-t">Verified</text>
+      <rect x="520" y="70" width="170" height="44" rx="10" class="sv-bad"/><text x="605" y="97" text-anchor="middle" class="sv-t">Rejected + remark</text>
+      <text x="710" y="35" class="sv-ts">counts in reports</text>
+      <text x="710" y="97" class="sv-ts">agent notified, excluded</text>
+      <path d="M170 62 H248" class="sv-edge" marker-end="url(#ar5)"/>
+      <path d="M420 56 C470 56 470 30 518 30" class="sv-edge" marker-end="url(#ar5)"/>
+      <path d="M420 68 C470 68 470 92 518 92" class="sv-edge" marker-end="url(#ar5)"/>
+    </svg>
+    <div class="cap"><b>Fig 5</b> Every visit goes through one review step.</div>
+  </div>
+
+  <h3>7.3 Visit reports</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Sales funnel this month</h4>
+      <div class="bars" style="grid-template-columns:130px 1fr 40px">
+        <span>Visits logged</span><div class="bar"><i class="p" style="width:100%;background:var(--accent)"></i></div><span>120</span>
+        <span>Interested</span><div class="bar"><i class="p" style="width:45%;background:var(--accent)"></i></div><span>54</span>
+        <span>Quotation sent</span><div class="bar"><i class="p" style="width:22%;background:var(--accent)"></i></div><span>26</span>
+        <span>Order won</span><div class="bar"><i class="p" style="width:7.5%"></i></div><span>9</span>
+      </div>
+      <p class="small muted" style="margin:10px 0 0">Illustrative numbers. Built from the outcome on each verified visit.</p>
+    </div>
+    <div class="card">
+      <h4>Reports &amp; exports</h4>
+      <ul class="small muted" style="margin-bottom:0">
+        <li>Visits per agent per day, with verified / rejected counts</li>
+        <li>Agent day sheet: stops, time on site, distance between stops</li>
+        <li>Follow-ups due and overdue</li>
+        <li>Verified visits export (CSV / Excel), for travel allowance and incentives</li>
+        <li>Visits per client and per area</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 07 CLIENTS -->
+<section id="clients">
+  <div class="sec-head"><span class="num">08</span><h2>Client &amp; AMC management</h2></div>
+  <p>A client is the company or person who pays. A client can have several sites, each site has one or more installed plants, and each plant can be under an AMC contract that creates service visits. Every message sent to the client is stored on the same record.</p>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 300" role="img" aria-label="How client records relate to each other">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker>
+      </defs>
+      <rect x="20" y="116" width="170" height="64" rx="10" class="sv-acc"/>
+      <text x="36" y="142" class="sv-t">Client</text><text x="36" y="160" class="sv-ts">company · GST · segment</text>
+
+      <rect x="250" y="20" width="180" height="60" rx="10" class="sv-node"/>
+      <text x="266" y="45" class="sv-t">Contacts</text><text x="266" y="63" class="sv-ts">owner, manager, accounts</text>
+      <rect x="250" y="118" width="180" height="60" rx="10" class="sv-node"/>
+      <text x="266" y="143" class="sv-t">Sites</text><text x="266" y="161" class="sv-ts">address · map pin · area</text>
+      <rect x="250" y="216" width="180" height="60" rx="10" class="sv-warn"/>
+      <text x="266" y="241" class="sv-t">Messages</text><text x="266" y="259" class="sv-ts">every SMS + status</text>
+
+      <rect x="480" y="118" width="180" height="60" rx="10" class="sv-node"/>
+      <text x="496" y="143" class="sv-t">Installed plants</text><text x="496" y="161" class="sv-ts">capacity · model · serial</text>
+
+      <rect x="710" y="40" width="170" height="60" rx="10" class="sv-ok"/>
+      <text x="726" y="65" class="sv-t">AMC contract</text><text x="726" y="83" class="sv-ts">dates · plan · value</text>
+      <rect x="710" y="150" width="170" height="60" rx="10" class="sv-node"/>
+      <text x="726" y="175" class="sv-t">Service visits</text><text x="726" y="193" class="sv-ts">due · tech · outcome</text>
+      <rect x="710" y="236" width="170" height="52" rx="10" class="sv-node2"/>
+      <text x="726" y="258" class="sv-t">Complaints</text><text x="726" y="275" class="sv-ts">tickets · priority</text>
+
+      <path d="M190 138 C220 138 220 50 248 50" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M190 148 H248" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M190 158 C220 158 220 246 248 246" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M430 148 H478" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M660 140 C690 140 690 70 708 70" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M660 156 C690 156 690 180 708 180" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M660 166 C685 166 685 262 708 262" class="sv-edge" marker-end="url(#ar3)"/>
+      <path d="M795 100 V148" class="sv-edge sv-dash" marker-end="url(#ar3)"/>
+      <text x="802" y="128" class="sv-tm">generates</text>    </svg>
+    </div>
+    <div class="cap"><b>Fig 6</b> Client record structure. A contract automatically creates its service visits.</div>
+  </div>
+
+  <h3>8.1 Features</h3>
+  <div class="grid g2">
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><div><h4>Client directory</h4><ul>
+      <li>Company / individual, GST number, segment (industrial, commercial, domestic, institution)</li>
+      <li>Multiple contacts, each with a phone, role and SMS opt-in</li>
+      <li>Multiple sites with address, area / city and map pin</li>
+      <li>Tags, lead source and assigned sales person</li>
+      <li>Search by name, phone, area or plant serial; Excel import for existing clients</li></ul></div></div>
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg></div><div><h4>Installed plants</h4><ul>
+      <li>Plant type, capacity (LPH), model, serial number</li>
+      <li>Membrane and filter specs, installation date, installed by</li>
+      <li>Warranty end date, with its own expiry reminder</li>
+      <li>Full service and parts-replacement history per plant</li></ul></div></div>
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12l2 2 4-4"/></svg></div><div><h4>AMC contracts</h4><ul>
+      <li>Plan (comprehensive / labour-only), start &amp; end date, contract value</li>
+      <li>Visits per year; the service schedule is generated from this</li>
+      <li>Filter / membrane replacement intervals</li>
+      <li>Payment status (paid, partial, due) and renewal status</li>
+      <li>One-click renew: copies terms to a new contract period</li></ul></div></div>
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-3.5 3.8-5 7-5s6 1.5 7 5"/></svg></div><div><h4>Service visits &amp; technicians</h4><ul>
+      <li>Calendar of due visits by week and by technician</li>
+      <li>Assign or reassign a technician; both client and technician get an SMS</li>
+      <li>Technician marks visit done in the app: notes, parts used, photo</li>
+      <li>Status: Scheduled · Done · Missed · Rescheduled; next due date recalculated</li>
+      <li>Technician workload view so visits are spread evenly</li></ul></div></div>
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div><div><h4>Complaints / service requests <span class="pill acc">added</span></h4><ul>
+      <li>Log a breakdown or complaint against a plant</li>
+      <li>Priority, assigned technician, target resolution time</li>
+      <li>Client gets a ticket number by SMS and an SMS when it's closed</li>
+      <li>Open / overdue complaints shown on the dashboard</li></ul></div></div>
+    <div class="feature"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg></div><div><h4>Client timeline &amp; reports</h4><ul>
+      <li>One timeline per client: contracts, visits, complaints, messages</li>
+      <li>AMC renewals due in 30 / 60 / 90 days</li>
+      <li>Expired, not renewed contracts (win-back list)</li>
+      <li>AMC revenue by month, visits done vs missed, technician performance</li></ul></div></div>
+  </div>
+</section>
+
+<!-- 08 MESSAGING -->
+<section id="messaging">
+  <div class="sec-head"><span class="num">09</span><h2>Client messaging (demo SMS API)</h2></div>
+  <p>The full messaging system is built in this phase: templates, automatic reminders, manual and bulk sends, scheduling and logs. The only difference from a live setup is the last hop. Instead of a paid SMS gateway, messages go to a <b>built-in demo SMS API</b> that behaves like one and shows every message in an in-app inbox. Nothing reaches a real phone and nothing is charged.</p>
+
+  <div class="grid g2" style="align-items:center">
+    <div>
+      <h4>How the demo SMS API works</h4>
+      <ul class="small muted">
+        <li>Same request shape as a real gateway: number, sender, template and variables in; a message ID out</li>
+        <li>Returns <span class="pill acc">sent</span> at once, then <span class="pill ok">delivered</span> a few seconds later, like a real delivery report</li>
+        <li>A "simulate failures" switch marks a share of messages <span class="pill bad">failed</span> to test retries</li>
+        <li>The <b>demo inbox</b> shows each message as the client's phone would, grouped by phone number</li>
+        <li>The provider sits behind one adapter, so a live gateway later is a settings change, not a rewrite</li>
+      </ul>
+      <div class="callout small" style="margin:0"><b>Going live later (not in this phase):</b> pick an SMS provider, register the sender ID and templates on India's DLT portal (2–7 working days), add the API key, switch the adapter from <code>demo</code> to <code>live</code>.</div>
+    </div>
+    <div class="phones" style="margin:0">
+      <div class="phone" aria-label="Demo SMS inbox mockup">
+        <div class="notch"></div>
+        <div class="screen" style="min-height:400px">
+          <div class="row"><span class="name" style="font-size:14px">Demo SMS inbox</span><span class="pill warn">DEMO</span></div>
+          <div class="muted" style="font-size:11.5px">+91 98xxx xx210 · Sharma Dairy</div>
+          <div class="sms">Dear Sharma Dairy, your RO plant service is due on 28 Nov. Our technician will call before the visit. – Agam Water<small>19 Nov · 9:00 AM · delivered</small></div>
+          <div class="sms">Technician Amit (98xxx xx455) will visit on 28 Nov between 10 AM–1 PM. – Agam Water<small>25 Nov · 9:00 AM · delivered</small></div>
+          <div class="sms">Service completed today. Next service due 28 Feb. Thank you! – Agam Water<small>28 Nov · 12:48 PM · delivered</small></div>
+          <div class="sms fail">Your AMC expires on 31 Dec. Reply or call to renew. – Agam Water<small>1 Dec · 9:00 AM · failed (simulated) · retried</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>9.1 When reminders go out over a contract year</h3>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 280" role="img" aria-label="AMC contract year with service visits and reminder points">
+      <!-- main line: x 50..850 = 12 months -->
+      <line x1="50" y1="80" x2="850" y2="80" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/>
+      <line x1="50" y1="80" x2="850" y2="80" stroke="var(--accent)" stroke-width="2"/>
+      <g class="sv-tm">
+        <text x="50" y="112" text-anchor="middle">Jan</text><text x="250" y="112" text-anchor="middle">Apr</text><text x="450" y="112" text-anchor="middle">Jul</text><text x="650" y="112" text-anchor="middle">Oct</text><text x="850" y="112" text-anchor="middle">Dec 31</text>
+      </g>
+      <circle cx="50" cy="80" r="9" class="f-ok"/>
+      <text x="50" y="50" text-anchor="middle" class="sv-t">Contract starts</text><text x="50" y="66" text-anchor="middle" class="sv-ts">welcome SMS</text>
+      <g>
+        <circle cx="250" cy="80" r="8" class="f-acc"/><text x="250" y="58" text-anchor="middle" class="sv-t">Service 1</text>
+        <circle cx="450" cy="80" r="8" class="f-acc"/><text x="450" y="58" text-anchor="middle" class="sv-t">Service 2</text>
+        <circle cx="650" cy="80" r="8" class="f-acc"/><text x="650" y="58" text-anchor="middle" class="sv-t">Service 3</text>
+      </g>
+      <circle cx="783" cy="80" r="5" class="f-warn"/><circle cx="817" cy="80" r="5" class="f-warn"/><circle cx="834" cy="80" r="5" class="f-warn"/>
+      <circle cx="850" cy="80" r="9" class="f-bad"/>
+      <text x="800" y="30" text-anchor="middle" class="sv-t">Renewal reminders</text>
+      <text x="800" y="46" text-anchor="middle" class="sv-ts">30, 15, 7 days before expiry</text>
+
+      <!-- zoom inset -->
+      <path d="M250 120 L52 150 M250 120 L848 150" class="sv-edge sv-dash" stroke-width="1"/>
+      <rect x="40" y="150" width="820" height="118" rx="12" class="sv-node2"/>
+      <text x="60" y="174" class="sv-tacc">EVERY SERVICE VISIT</text>
+      <line x1="120" y1="220" x2="800" y2="220" stroke="var(--ink-3)" stroke-width="1.5"/>
+      <!-- T-7 x=140, T-3 x=360, T0 x=560, T+1 x=760 -->
+      <circle cx="140" cy="220" r="7" class="f-warn"/><text x="140" y="202" text-anchor="middle" class="sv-tm">7 days before</text><text x="140" y="246" text-anchor="middle" class="sv-ts">Client: service due</text><text x="140" y="261" text-anchor="middle" class="sv-ts">next week</text>
+      <circle cx="360" cy="220" r="7" class="f-warn"/><text x="360" y="202" text-anchor="middle" class="sv-tm">3 days before</text><text x="360" y="246" text-anchor="middle" class="sv-ts">Client: date + technician name</text><text x="360" y="261" text-anchor="middle" class="sv-ts">Technician: visit assigned</text>
+      <circle cx="560" cy="220" r="9" class="f-acc"/><text x="560" y="202" text-anchor="middle" class="sv-tm">Visit day</text><text x="560" y="246" text-anchor="middle" class="sv-ts">Client: technician on the way</text><text x="560" y="261" text-anchor="middle" class="sv-ts">Technician: address + contact</text>
+      <circle cx="760" cy="220" r="7" class="f-ok"/><text x="760" y="202" text-anchor="middle" class="sv-tm">After visit</text><text x="760" y="246" text-anchor="middle" class="sv-ts">Client: service done,</text><text x="760" y="261" text-anchor="middle" class="sv-ts">next due date</text>
+    </svg>
+    </div>
+    <div class="cap"><b>Fig 7</b> A quarterly AMC plan. Timings are settings, not hard-coded.</div>
+  </div>
+
+  <h3>9.2 How a message is sent</h3>
+  <div class="figure">
+    <div class="scroll-x">
+    <svg viewBox="0 0 900 250" role="img" aria-label="SMS sending pipeline">
+      <defs>
+        <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker>
+      </defs>
+      <rect x="20" y="30" width="130" height="70" rx="10" class="sv-acc"/>
+      <text x="85" y="58" text-anchor="middle" class="sv-t">Daily job</text><text x="85" y="76" text-anchor="middle" class="sv-ts">runs 9:00 AM</text>
+      <rect x="165" y="30" width="130" height="70" rx="10" class="sv-node"/>
+      <text x="230" y="58" text-anchor="middle" class="sv-t">Find what's due</text><text x="230" y="76" text-anchor="middle" class="sv-ts">visits, renewals,</text><text x="230" y="90" text-anchor="middle" class="sv-ts">payments</text>
+      <rect x="310" y="30" width="130" height="70" rx="10" class="sv-node"/>
+      <text x="375" y="58" text-anchor="middle" class="sv-t">Filter</text><text x="375" y="76" text-anchor="middle" class="sv-ts">skip sent, opted-out,</text><text x="375" y="90" text-anchor="middle" class="sv-ts">invalid numbers</text>
+      <rect x="455" y="30" width="130" height="70" rx="10" class="sv-node"/>
+      <text x="520" y="58" text-anchor="middle" class="sv-t">Fill template</text><text x="520" y="76" text-anchor="middle" class="sv-ts">name, date, tech,</text><text x="520" y="90" text-anchor="middle" class="sv-ts">ticket no.</text>
+      <rect x="600" y="30" width="130" height="70" rx="10" class="sv-warn"/>
+      <text x="665" y="58" text-anchor="middle" class="sv-t">SMS API (demo)</text><text x="665" y="76" text-anchor="middle" class="sv-ts">mock gateway</text>
+      <rect x="745" y="30" width="135" height="70" rx="10" class="sv-node2"/>
+      <text x="812" y="58" text-anchor="middle" class="sv-t">Demo inbox</text><text x="812" y="76" text-anchor="middle" class="sv-ts">shown, not sent</text>
+
+      <rect x="455" y="160" width="130" height="70" rx="10" class="sv-vio"/>
+      <text x="520" y="186" text-anchor="middle" class="sv-t">Admin compose</text><text x="520" y="204" text-anchor="middle" class="sv-ts">single, segment,</text><text x="520" y="218" text-anchor="middle" class="sv-ts">or scheduled</text>
+      <rect x="600" y="160" width="130" height="70" rx="10" class="sv-node"/>
+      <text x="665" y="186" text-anchor="middle" class="sv-t">Delivery status</text><text x="665" y="204" text-anchor="middle" class="sv-ts">simulated by</text><text x="665" y="218" text-anchor="middle" class="sv-ts">demo API</text>
+      <rect x="745" y="160" width="135" height="70" rx="10" class="sv-node"/>
+      <text x="812" y="186" text-anchor="middle" class="sv-t">Message log</text><text x="812" y="204" text-anchor="middle" class="sv-ts">sent · delivered ·</text><text x="812" y="218" text-anchor="middle" class="sv-ts">failed → retry once</text>
+
+      <path d="M150 65 H163" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M295 65 H308" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M440 65 H453" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M585 65 H598" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M730 65 H743" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M520 160 V102" class="sv-edge" marker-end="url(#ar4)"/>
+      <path d="M665 100 V158" class="sv-edge sv-dash" marker-end="url(#ar4)"/>
+      <path d="M730 195 H743" class="sv-edge" marker-end="url(#ar4)"/>
+      <text x="20" y="150" class="sv-tm">Events also send instantly:</text>
+      <text x="20" y="168" class="sv-ts">• technician assigned</text>
+      <text x="20" y="186" class="sv-ts">• complaint logged / closed</text>
+      <text x="20" y="204" class="sv-ts">• visit marked done</text>
+    </svg>
+    </div>
+    <div class="cap"><b>Fig 8</b> Automatic and manual messages share one path. Only the API box changes when going live.</div>
+  </div>
+
+  <h3>9.3 Message catalogue</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Message</th><th>Trigger</th><th>To</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td>Welcome / contract activated</td><td>AMC contract created</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Service due reminder</td><td>7 and 3 days before visit</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Technician assigned</td><td>Visit assigned or changed</td><td>Client + technician</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Visit today</td><td>Morning of visit</td><td>Client + technician</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Service completed</td><td>Technician marks visit done</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Filter / membrane change due</td><td>Replacement interval reached</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>AMC renewal reminder</td><td>30, 15, 7 days before expiry</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>AMC expired</td><td>Day after expiry, if not renewed</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Payment due <span class="pill acc">added</span></td><td>Contract payment pending N days</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Complaint received / resolved <span class="pill acc">added</span></td><td>Ticket created / closed</td><td>Client</td><td><span class="pill acc">Auto</span></td></tr>
+        <tr><td>Announcements, festive greetings, offers</td><td>Admin composes</td><td>Segment or list</td><td><span class="pill vio">Manual</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>9.4 Messaging console features</h3>
+  <div class="grid g3">
+    <div class="card"><h4>Compose &amp; schedule</h4><ul class="small muted" style="margin-bottom:0"><li>Pick a template, fill variables</li><li>Send to one client, a segment (area, plan, expiry month) or an uploaded list</li><li>Send now or at a date/time</li><li>Preview recipient count before sending</li></ul></div>
+    <div class="card"><h4>Automation rules</h4><ul class="small muted" style="margin-bottom:0"><li>Turn each automatic message on or off</li><li>Change the day offsets (e.g. 10/5/1)</li><li>Quiet hours: no SMS before 9 AM or after 8 PM</li><li>Never send the same reminder twice</li></ul></div>
+    <div class="card"><h4>Logs</h4><ul class="small muted" style="margin-bottom:0"><li>Every SMS with status and time</li><li>Failed list with one-click resend</li><li>Monthly message counts</li><li>"Simulate failures" switch for testing</li></ul></div>
+  </div>
+    <p class="small muted"><b>Later option:</b> WhatsApp Business messages can plug into the same adapter, templates, logs and rules. They cost a little more per message, but clients can reply and receive PDFs.</p>
+</section>
+
+<!-- 09 DASHBOARD -->
+<section id="dashboard">
+  <div class="sec-head"><span class="num">10</span><h2>Admin dashboard</h2></div>
+  <p>The first screen an admin sees. It answers four questions: who is at work today, where the field team has been, which clients need attention, and what's going out by SMS.</p>
+  <div class="mock" aria-label="Admin dashboard mockup">
+    <div class="mock-bar"><i></i><i></i><i></i><span style="margin-left:8px">Dashboard · Saturday, 22 Nov 2026</span></div>
+    <div class="mock-body">
+      <div class="kpis">
+        <div class="kpi"><div class="v">38</div><div class="l">Active staff</div></div>
+        <div class="kpi ok"><div class="v">29</div><div class="l">Present</div></div>
+        <div class="kpi warn"><div class="v">4</div><div class="l">Late</div></div>
+        <div class="kpi vio"><div class="v">3</div><div class="l">On leave</div></div>
+        <div class="kpi bad"><div class="v">2</div><div class="l">Not checked in</div></div>
+      </div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card" style="box-shadow:none">
+          <h4>Attendance by department</h4>
+          <div class="bars">
+            <span>Office</span><div class="bar"><i class="p" style="width:70%"></i><i class="l" style="width:10%"></i><i class="v" style="width:10%"></i><i class="a" style="width:10%"></i></div><span>10</span>
+            <span>Sales</span><div class="bar"><i class="p" style="width:75%"></i><i class="l" style="width:12.5%"></i><i class="v" style="width:12.5%"></i></div><span>8</span>
+            <span>AMC service</span><div class="bar"><i class="p" style="width:78%"></i><i class="l" style="width:8%"></i><i class="v" style="width:7%"></i><i class="a" style="width:7%"></i></div><span>14</span>
+            <span>Production</span><div class="bar"><i class="p" style="width:83%"></i><i class="l" style="width:17%"></i></div><span>6</span>
+          </div>
+          <div class="legend"><span style="--c:var(--ok)">Present</span><span style="--c:var(--warn)">Late</span><span style="--c:var(--violet)">Leave</span><span style="--c:var(--bad)">Absent</span></div>
+        </div>
+        <div class="card" style="box-shadow:none">
+          <h4>Needs action</h4>
+          <div class="mini-list">
+            <div><span>Leave requests pending</span><span class="pill warn">5</span></div>
+            <div><span>Flagged check-ins to review</span><span class="pill bad">2</span></div>
+            <div><span>Field visits awaiting verification</span><span class="pill warn">7</span></div>
+            <div><span>Service visits due this week</span><span class="pill acc">17</span></div>
+            <div><span>AMC expiring in 30 days</span><span class="pill warn">9</span></div>
+            <div><span>Open complaints (2 overdue)</span><span class="pill bad">6</span></div>
+            <div><span>Demo SMS scheduled today · failed</span><span class="pill neu">42 · 1</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="small muted" style="margin-top:10px">Illustrative numbers only.</p>
+</section>
+
+<!-- 10 DATA MODEL -->
+<section id="data">
+  <div class="sec-head"><span class="num">11</span><h2>Data model</h2></div>
+  <p>Main tables in MySQL. <span class="mono" style="color:var(--accent)">PK</span> is the record's own ID, <span class="mono" style="color:var(--violet)">FK</span> points to another table. Every table also has <code>created_at</code>, <code>updated_at</code> and <code>created_by</code>.</p>
+
+  <div class="group-label">People &amp; attendance</div>
+  <div class="grid g3">
+    <div class="card ent"><h4>employees <small>staff</small></h4><ul>
+      <li class="pk">id <em>PK</em></li><li>emp_code, name, mobile</li><li>role <em>enum</em></li><li class="fk">department_id <em>FK</em></li><li class="fk">shift_id <em>FK</em></li><li class="fk">manager_id <em>FK → employees</em></li><li class="fk">leave_policy_id <em>FK</em></li><li>work_type, status, joined_on</li></ul></div>
+    <div class="card ent"><h4>shifts <small>rules</small></h4><ul>
+      <li class="pk">id <em>PK</em></li><li>name, start, end</li><li>grace_min, late_cutoff</li><li>half_day_hours, absent_hours</li><li>ot_after_min, weekly_off</li><li>lates_per_half_day</li></ul></div>
+    <div class="card ent"><h4>attendance <small>1 per person per day</small></h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">employee_id <em>FK</em></li><li>date <em>unique w/ emp</em></li><li>in_at, out_at <em>server time</em></li><li>in_lat/lng/acc, out_lat/lng/acc</li><li>in_photo, out_photo <em>R2 key</em></li><li>status, worked_min, ot_min</li><li>flags <em>json</em></li></ul></div>
+    <div class="card ent"><h4>regularisations</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">attendance_id <em>FK</em></li><li>type, requested_time, reason</li><li>status, decided_by, decided_at</li></ul></div>
+    <div class="card ent"><h4>office_locations</h4><ul>
+      <li class="pk">id <em>PK</em></li><li>name, lat, lng</li><li>radius_m</li></ul></div>
+    <div class="card ent"><h4>departments · holidays</h4><ul>
+      <li class="pk">id <em>PK</em></li><li>departments: name, head_id</li><li>holidays: date, name, optional</li></ul></div>
+  </div>
+
+  <div class="group-label">Leave</div>
+  <div class="grid g3">
+    <div class="card ent"><h4>leave_types · leave_policies</h4><ul>
+      <li class="pk">id <em>PK</em></li><li>code, name, paid</li><li>yearly_quota, accrual</li><li>carry_forward_max</li><li>min_notice_days, max_continuous</li></ul></div>
+    <div class="card ent"><h4>leave_balances</h4><ul>
+      <li class="fk">employee_id <em>FK</em></li><li class="fk">leave_type_id <em>FK</em></li><li>year</li><li>opening, credited, used, adjusted</li></ul></div>
+    <div class="card ent"><h4>leave_requests</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">employee_id, leave_type_id <em>FK</em></li><li>from, to, half_day, days</li><li>reason, attachment</li><li>status, approver_id, remark</li></ul></div>
+  </div>
+
+  <div class="group-label">Field visits</div>
+  <div class="grid g3">
+    <div class="card ent"><h4>field_visits <small>1 per stop</small></h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">employee_id <em>FK</em></li><li class="fk">client_id, site_id <em>FK, nullable</em></li><li>prospect_name, contact_met</li><li>purpose, notes, outcome</li><li>logged_at <em>server time</em></li><li>lat, lng, accuracy_m</li><li>photo <em>R2 key</em>, distance_from_site_m</li></ul></div>
+    <div class="card ent"><h4>field_visits <small>review &amp; links</small></h4><ul>
+      <li>status <em>pending | verified | rejected</em></li><li class="fk">verified_by <em>FK → employees</em></li><li>verified_at, remark</li><li>flags <em>json</em></li><li class="fk">service_visit_id <em>FK, nullable</em></li></ul></div>
+    <div class="card ent"><h4>follow_ups</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">field_visit_id <em>FK</em></li><li class="fk">employee_id <em>FK</em></li><li>due_on, note</li><li>status <em>open | done</em></li></ul></div>
+  </div>
+
+  <div class="group-label">Clients &amp; AMC</div>
+  <div class="grid g3">
+    <div class="card ent"><h4>clients</h4><ul>
+      <li class="pk">id <em>PK</em></li><li>name, type, gst_no</li><li>segment, tags, source</li><li class="fk">sales_owner_id <em>FK</em></li><li>status</li></ul></div>
+    <div class="card ent"><h4>client_contacts</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">client_id <em>FK</em></li><li>name, designation, phone</li><li>is_primary, sms_opt_in</li></ul></div>
+    <div class="card ent"><h4>client_sites</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">client_id <em>FK</em></li><li>address, area, city, pin</li><li>lat, lng</li></ul></div>
+    <div class="card ent"><h4>installations</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">site_id <em>FK</em></li><li>plant_type, capacity_lph</li><li>model, serial_no, specs <em>json</em></li><li>installed_on, warranty_till</li></ul></div>
+    <div class="card ent"><h4>amc_contracts</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">installation_id <em>FK</em></li><li>plan, start_on, end_on</li><li>visits_per_year, value</li><li>payment_status, renewal_status</li><li class="fk">renewed_from_id <em>FK</em></li></ul></div>
+    <div class="card ent"><h4>service_visits</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">contract_id / complaint_id <em>FK</em></li><li class="fk">technician_id <em>FK → employees</em></li><li>due_on, done_at, status</li><li>notes, parts_used <em>json</em>, photo</li></ul></div>
+    <div class="card ent"><h4>complaints</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">installation_id <em>FK</em></li><li>ticket_no, issue, priority</li><li>status, due_by, closed_at</li></ul></div>
+  </div>
+
+  <div class="group-label">Messaging &amp; system</div>
+  <div class="grid g3">
+    <div class="card ent"><h4>sms_templates</h4><ul>
+      <li class="pk">id <em>PK</em></li><li>name, body, variables</li><li>provider_template_id <em>live, later</em></li><li>trigger, offset_days, active</li></ul></div>
+    <div class="card ent"><h4>sms_messages</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">template_id, client_id <em>FK</em></li><li>phone, body, ref_type, ref_id</li><li>scheduled_at, sent_at</li><li>provider <em>demo | live</em></li><li>provider_msg_id, status, error</li></ul></div>
+    <div class="card ent"><h4>audit_log</h4><ul>
+      <li class="pk">id <em>PK</em></li><li class="fk">user_id <em>FK</em></li><li>table, record_id, action</li><li>before, after <em>json</em>, reason</li></ul></div>
+  </div>
+</section>
+
+<!-- 11 SECURITY -->
+<section id="security">
+  <div class="sec-head"><span class="num">12</span><h2>Integrity &amp; security</h2></div>
+  <div class="grid g2">
+    <div class="card"><h4>Attendance &amp; visits can't be faked easily</h4><ul class="small muted" style="margin-bottom:0">
+      <li>Time always comes from the server, never the phone</li>
+      <li>Live camera only; gallery uploads blocked</li>
+      <li>Time and location burned into the photo before upload</li>
+      <li>GPS accuracy checked; weak or far-away locks flagged</li>
+      <li>Visits far from the client's saved site pin flagged for review</li>
+      <li>One active device per employee; new device needs admin OK</li></ul></div>
+    <div class="card"><h4>Access &amp; accountability</h4><ul class="small muted" style="margin-bottom:0">
+      <li>Mobile number + password, or mobile OTP login</li>
+      <li>Role checked on every request on the server, not only hidden in the UI</li>
+      <li>Every manual change logged with who, when, before, after and why</li>
+      <li>Session timeout on shared office computers</li></ul></div>
+    <div class="card"><h4>Data protection</h4><ul class="small muted" style="margin-bottom:0">
+      <li>HTTPS everywhere; photos in a private R2 bucket with expiring links</li>
+      <li>Daily database backup, kept 30 days</li>
+      <li>Check-in photos auto-deleted after 12 months (setting)</li>
+      <li>Client phone numbers visible only to roles that need them</li></ul></div>
+    <div class="card"><h4>SMS demo safety</h4><ul class="small muted" style="margin-bottom:0">
+      <li>Demo API never contacts a real phone network</li>
+      <li>Every screen and log entry clearly marked DEMO</li>
+      <li>Opt-out, quiet hours and rate limits already enforced, so going live changes no behaviour</li>
+      <li>Only approved templates can be sent, same as live</li></ul></div>
+  </div>
+</section>
+
+<!-- 12 STACK -->
+<section id="stack">
+  <div class="sec-head"><span class="num">13</span><h2>Tech stack &amp; running costs</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b>App</b></td><td>Next.js (App Router), installable PWA</td><td>One codebase for staff app and admin portal</td></tr>
+        <tr><td><b>Database</b></td><td>MySQL 8 with connection pooling</td><td>Relational data, included with Hostinger</td></tr>
+        <tr><td><b>Photos</b></td><td>Browser canvas → WebP (~60 KB) → Cloudflare R2</td><td>Selfies and visit photos; free tier covers 40 staff</td></tr>
+        <tr><td><b>Maps</b></td><td>Leaflet + OpenStreetMap</td><td>Visit map, routes and check-in pins with no per-load fees</td></tr>
+        <tr><td><b>SMS</b></td><td>Built-in demo SMS API behind a provider adapter + daily cron</td><td>Full demo with no gateway account or per-SMS cost; live provider plugs in later</td></tr>
+        <tr><td><b>Exports</b></td><td>CSV / Excel generated on the server</td><td>Opens directly in Excel or payroll tools</td></tr>
+        <tr><td><b>Hosting</b></td><td>Hostinger Business (Node.js + MySQL + SSL)</td><td>Low fixed yearly cost</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid g4 keep2">
+    <div class="card stat"><div class="v">~₹3,000</div><div class="l">hosting, year 1 (renews higher)</div></div>
+    <div class="card stat"><div class="v">₹0</div><div class="l">SMS in demo mode</div></div>
+    <div class="card stat"><div class="v">₹0</div><div class="l">photo storage (R2 free tier)</div></div>
+    <div class="card stat"><div class="v">₹0</div><div class="l">maps and app distribution</div></div>
+  </div>
+  <p class="small muted">Per-SMS charges start only when a live SMS gateway is connected in a later phase.</p>
+</section>
+
+<!-- 13 PLAN -->
+<section id="plan">
+  <div class="sec-head"><span class="num">14</span><h2>Delivery plan</h2></div>
+  <p>Indicative four-week plan for the modules in this document. Attendance goes live first so staff start using it while the client side is finished.</p>
+  <div class="gantt">
+    <div class="gh">Phase</div><div class="gh">Week 1</div><div class="gh">Week 2</div><div class="gh">Week 3</div><div class="gh">Week 4</div>
+
+    <div class="lab">Foundation<small>setup &amp; people</small></div>
+    <div class="track"><div class="blk" style="grid-column:1/2;background:var(--accent-soft);color:var(--accent)">Schema, login, roles, employees</div></div>
+
+    <div class="lab">Attendance<small>check-in &amp; rules</small></div>
+    <div class="track"><div class="blk" style="grid-column:1/3;background:var(--ok-soft);color:var(--ok)">Selfie + GPS check-in, shifts, statuses, headcount</div></div>
+
+    <div class="lab">Leave<small>policies &amp; approvals</small></div>
+    <div class="track"><div class="blk" style="grid-column:2/3;background:var(--violet-soft);color:var(--violet)">Leave, holidays, regularisation</div></div>
+
+    <div class="lab">Clients &amp; AMC<small>CRM core</small></div>
+    <div class="track"><div class="blk" style="grid-column:3/4;background:var(--accent-soft);color:var(--accent)">Clients, plants, AMC, visits, complaints</div></div>
+
+    <div class="lab">Field visits<small>logger &amp; map</small></div>
+    <div class="track"><div class="blk" style="grid-column:2/4;background:var(--warn-soft);color:var(--warn)">Visit logging, admin map, verify queue, follow-ups</div></div>
+
+    <div class="lab">Messaging<small>demo SMS API</small></div>
+    <div class="track"><div class="blk" style="grid-column:3/5;background:var(--bad-soft);color:var(--bad)">Templates, scheduler, demo API &amp; inbox, console, logs</div></div>
+
+    <div class="lab" style="border-bottom:0">Launch<small>test &amp; go live</small></div>
+    <div class="track" style="border-bottom:0"><div class="blk" style="grid-column:2/3;background:var(--surface-2);color:var(--ink-2)">Staff pilot</div><div class="blk" style="grid-column:4/5;background:var(--ok-soft);color:var(--ok)">Dashboard, exports, UAT, live</div></div>
+  </div>
+
+  <div class="grid g4 keep2" style="margin-top:16px">
+    <div class="card"><span class="pill acc">End of week 1</span><p class="small muted" style="margin-bottom:0">Employees loaded, logins and roles working, check-in started.</p></div>
+    <div class="card"><span class="pill ok">End of week 2</span><p class="small muted" style="margin-bottom:0">Staff pilot of check-in, leave and visit logging with 5–10 people.</p></div>
+    <div class="card"><span class="pill warn">End of week 3</span><p class="small muted" style="margin-bottom:0">Client data imported, visit map live, AMC reminders showing in the demo inbox.</p></div>
+    <div class="card"><span class="pill vio">End of week 4</span><p class="small muted" style="margin-bottom:0">Acceptance testing signed off, full launch, admin training.</p></div>
+  </div>
+</section>
+
+<!-- 14 QUESTIONS -->
+<section id="questions">
+  <div class="sec-head"><span class="num">15</span><h2>Open questions for Agam Water</h2></div>
+  <p>We need these answers to configure the system. Placeholders are used in this document until then.</p>
+  <div class="qa">
+    <div><b>Shifts</b>Shift timings, grace minutes, weekly off days, and whether any staff work night or rotating shifts.</div>
+    <div><b>Late &amp; half-day policy</b>How many late marks equal a half-day cut? When is a day counted as half or absent?</div>
+    <div><b>Leave policy</b>Leave types, yearly quotas, accrual, carry forward and the approval chain.</div>
+    <div><b>Office locations</b>Addresses of offices / plants where office staff must check in, and an allowed radius.</div>
+    <div><b>Field staff</b>Can sales and technicians check in from anywhere, or must they start at the office?</div>
+    <div><b>Payroll format</b>Which payroll tool or Excel format does accounts use, so exports match it?</div>
+    <div><b>Existing client data</b>Where client and AMC records live today (Excel, Tally, register) for the import.</div>
+    <div><b>Visit purposes &amp; outcomes</b>Which visit types and outcomes does the sales team use today? Any daily visit target per agent?</div>
+    <div><b>Visit verification</b>Who verifies visits, and how far from the client's address (e.g. 500 m) should a visit be flagged?</div>
+    <div><b>Visit photos</b>Should a site photo be mandatory for some visit types (e.g. demos, AMC service)?</div>
+    <div><b>SMS language</b>English only, Hindi, or both? Hindi SMS cost more per message.</div>
+    <div><b>AMC plans</b>Standard plans offered, visits per year, and filter / membrane change intervals.</div>
+  </div>
+</section>
+
+<footer>
+  Agam Water Industries · Attendance, Field Visit &amp; Client Messaging System · Project document v1.0 · Prepared by Doozer Studios · 22 Nov 2026<br>
+  Commercials and payment terms are covered in the original proposal and are not repeated here.
+</footer>
+
+</main>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('themeBtn'); if(!btn) return;
+  var root=document.documentElement;
+  try{var saved=localStorage.getItem('agam-doc-theme'); if(saved) root.setAttribute('data-theme',saved);}catch(e){}
+  btn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next);
+    try{localStorage.setItem('agam-doc-theme',next);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

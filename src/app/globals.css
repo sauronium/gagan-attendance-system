@@ -1,0 +1,250 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Dark mode is class-based (next-themes adds .dark to <html>). */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Agam Water Industries theme (source of truth: src/lib/brand.ts).
+ * shadcn/ui semantic tokens are mapped onto the brand palette:
+ *   primary = navy, ring = aqua, charts = navy/aqua/teal/orange/lavender,
+ *   sidebar = deep navy. Extra tokens: success, warning, info (+ "-soft").
+ */
+
+:root {
+  --radius: 0.5rem; /* website uses 8px corners */
+
+  --background: #f0f2f5;
+  --foreground: #2b3a59;
+  --card: #ffffff;
+  --card-foreground: #2b3a59;
+  --popover: #ffffff;
+  --popover-foreground: #2b3a59;
+
+  --primary: #2a4086;
+  --primary-foreground: #ffffff;
+  --secondary: #e7ecf7;
+  --secondary-foreground: #2a4086;
+  --muted: #eef1f6;
+  --muted-foreground: #5f6682;
+  --accent: #e2f5f9;
+  --accent-foreground: #1d3270;
+  --destructive: #c93a3a;
+
+  --border: #dde2eb;
+  --input: #d2d8e4;
+  --ring: #00a8c8;
+
+  --success: #1d7f52;
+  --success-soft: #e1f3ea;
+  --warning: #a35f00;
+  --warning-soft: #fbf0dc;
+  --info: #00809a;
+  --info-soft: #dff3f8;
+  --brand-highlight: #f06a0c;
+
+  --chart-1: #2a4086;
+  --chart-2: #00a8c8;
+  --chart-3: #3dcbcb;
+  --chart-4: #f06a0c;
+  --chart-5: #7b809a;
+
+  --sidebar: #1c2d66;
+  --sidebar-foreground: #d7def5;
+  --sidebar-primary: #3dcbcb;
+  --sidebar-primary-foreground: #0b1838;
+  --sidebar-accent: #2a3d7f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2b3c78;
+  --sidebar-ring: #3dcbcb;
+}
+
+.dark {
+  --background: #0c1222;
+  --foreground: #e4e9f5;
+  --card: #141c31;
+  --card-foreground: #e4e9f5;
+  --popover: #141c31;
+  --popover-foreground: #e4e9f5;
+
+  --primary: #8ea6f2;
+  --primary-foreground: #0b1430;
+  --secondary: #1d2846;
+  --secondary-foreground: #d7def5;
+  --muted: #19223c;
+  --muted-foreground: #9ba5c4;
+  --accent: #123844;
+  --accent-foreground: #c8f2fa;
+  --destructive: #f07a7a;
+
+  --border: #253050;
+  --input: #2c385c;
+  --ring: #3dcbcb;
+
+  --success: #4fc58a;
+  --success-soft: #12302a;
+  --warning: #e6ac4c;
+  --warning-soft: #382a12;
+  --info: #4fd1e8;
+  --info-soft: #0f3340;
+  --brand-highlight: #ff8a3d;
+
+  --chart-1: #8ea6f2;
+  --chart-2: #3dcbcb;
+  --chart-3: #00a8c8;
+  --chart-4: #ff8a3d;
+  --chart-5: #9ba5c4;
+
+  --sidebar: #0a1020;
+  --sidebar-foreground: #c9d2ee;
+  --sidebar-primary: #3dcbcb;
+  --sidebar-primary-foreground: #0b1838;
+  --sidebar-accent: #18223f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1c2643;
+  --sidebar-ring: #3dcbcb;
+}
+
+@theme {
+  /* Raw brand palette: fixed, theme-independent. */
+  --color-brand-navy: #2a4086;
+  --color-brand-teal: #3dcbcb;
+  --color-brand-aqua: #00a8c8;
+  --color-brand-orange: #f06a0c;
+  --color-brand-lavender: #6068a0;
+  --color-brand-ink: #344767;
+  --color-brand-muted: #7b809a;
+  --color-brand-surface: #f0f2f5;
+}
+
+@theme inline {
+  --font-sans: var(--font-roboto);
+  --font-heading: var(--font-roboto);
+  --font-mono: var(--font-roboto-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-highlight: var(--brand-highlight);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-brand: var(--radius);
+}
+
+/* The website's signature navy → teal gradient (buttons, hero bands). */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(195deg, #2a4086, #3dcbcb);
+}
+
+@layer base {
+  /* Native UI (scrollbars, form controls, first paint) follows the theme.
+     next-themes puts .light / .dark on <html>; before that, follow the OS. */
+  :root {
+    color-scheme: light dark;
+    /* Minimum control size: 24px for mouse, 44px on touch screens (WCAG 2.5.8 / 2.5.5). */
+    --target-size: 24px;
+  }
+  :root.light {
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
+  }
+  @media (pointer: coarse) {
+    :root {
+      --target-size: 44px;
+    }
+  }
+  :where(button, select, textarea, input:not([type="checkbox"], [type="radio"], [type="hidden"]), [role="button"], nav a) {
+    min-block-size: var(--target-size);
+    min-inline-size: var(--target-size);
+  }
+  /* Short headings balance their lines; body text avoids orphans. */
+  :where(h1, h2, h3) {
+    text-wrap: balance;
+  }
+  :where(p, li) {
+    text-wrap: pretty;
+  }
+  /* Long words, URLs and phone numbers wrap instead of widening the page. */
+  body {
+    overflow-wrap: break-word;
+  }
+  :where(img, video) {
+    max-inline-size: 100%;
+  }
+  /* Staff app: focused fields scroll clear of the fixed bottom tab bar. */
+  html:has([data-staff-nav]) {
+    scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Respect "reduce motion": no entrance animations or animated transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Leaflet map tiles should not pick up the dark theme's colours. */
+.leaflet-container {
+  font: inherit;
+}
