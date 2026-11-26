@@ -16,15 +16,20 @@ import { logAudit } from "@/lib/audit";
 import { env } from "@/lib/env";
 import { formatPhone, isValidPhone } from "@/lib/phone";
 import { processDueSms } from "@/lib/sms";
-import { addDays, formatDate, todayIso, weekdayIndex } from "@/lib/time";
+import { addDays, daysBetween, formatDate, todayIso, weekdayIndex } from "@/lib/time";
+import { runLeaveAccruals } from "@/server/leave-accrual";
 import { sendTemplated, TEMPLATE_KEYS, type TemplateKey } from "@/server/sms-templates";
 
 // Daily scheduled job (GET/POST /api/cron/daily, ideally ~9:00 AM local):
 //   a) close yesterday's attendance (week off / holiday / absent / missed punch)
-//   b) queue reminder SMS (service due, visit today, AMC renewal / expiry, payment)
-//   c) send queued SMS whose time has come
-// Every step is idempotent: attendance uses the (employee, date) unique key
-// and reminders use sms_messages.dedupe_key, so running twice is harmless.
+//   b) leave credits: yearly quota, monthly accrual, year-end carry forward
+//   c) queue reminder SMS (service due, visit today, filter change, AMC
+//      renewal / expiry, payment)
+//   d) send queued SMS whose time has come (also every few minutes via
+//      /api/cron/sms, so scheduled messages go out on time)
+// Every step is idempotent: attendance uses the (employee, date) unique key,
+// leave credits are checked against the adjustments ledger and reminders use
+// sms_messages.dedupe_key, so running twice is harmless.
 
 type Contact = { id: number; name: string; phone: string; isPrimary: boolean; smsOptIn: boolean };
 
@@ -142,6 +147,7 @@ const DEFAULT_OFFSETS: Partial<Record<TemplateKey, number[]>> = {
   technician_job: [0],
   amc_renewal_due: [30, 15, 7],
   payment_due: [15],
+  filter_change_due: [7],
 };
 
 async function templateOffsets(): Promise<Map<string, number[]>> {
@@ -183,6 +189,7 @@ async function sendDailyReminders(today: string) {
     amcRenewal: counter(),
     amcExpired: counter(),
     paymentDue: counter(),
+    filterChange: counter(),
   };
 
   // Service visits that are still scheduled, due on any day we remind for.
@@ -212,11 +219,11 @@ async function sendDailyReminders(today: string) {
       const vars = {
         client: client.name,
         contact: contact?.name ?? client.name,
-        contact_phone: contact ? formatPhone(contact.phone) : "",
+        contactPhone: contact ? formatPhone(contact.phone) : "",
         date: formatDate(v.dueOn),
-        due_date: formatDate(v.dueOn),
+        dueDate: formatDate(v.dueOn),
         technician: tech?.name ?? "our technician",
-        technician_phone: tech ? formatPhone(tech.mobile) : "",
+        technicianPhone: tech ? formatPhone(tech.mobile) : "",
         address: siteAddress(site),
         model: v.installation.model ?? "RO plant",
       };
@@ -255,9 +262,37 @@ async function sendDailyReminders(today: string) {
       await remind(
         out.amcRenewal,
         TEMPLATE_KEYS.amcRenewalDue,
-        { client: client.name, contact: contact.name, contract_no: c.contractNo, date: formatDate(c.endOn), end_date: formatDate(c.endOn), days: offset },
+        { client: client.name, contact: contact.name, contractNo: c.contractNo, date: formatDate(c.endOn), endDate: formatDate(c.endOn), days: offset },
         { phone: contact.phone, clientId: client.id, contactId: contact.id, refType: "amc_contract", refId: c.id, dedupeKey: `amc_renewal_due:${c.id}:${offset}` },
       );
+    }
+  }
+
+  // Filter change: every `filterChangeEveryDays` from the contract start,
+  // within the contract period. Reminded N days before each change date.
+  const filterOffsets = off(TEMPLATE_KEYS.filterChangeDue);
+  if (filterOffsets.length) {
+    const withFilters = await db.query.amcContracts.findMany({
+      where: and(eq(amcContracts.status, "active"), isNotNull(amcContracts.filterChangeEveryDays)),
+      with: { installation: installationWith },
+    });
+    for (const c of withFilters) {
+      const every = c.filterChangeEveryDays ?? 0;
+      if (every <= 0) continue;
+      const client = c.installation.site.client;
+      const contact = pickContact(client.contacts);
+      if (!contact) continue;
+      for (const offset of filterOffsets) {
+        const changeOn = addDays(today, offset);
+        const sinceStart = daysBetween(c.startOn, changeOn);
+        if (sinceStart <= 0 || sinceStart % every !== 0 || changeOn > c.endOn) continue;
+        await remind(
+          out.filterChange,
+          TEMPLATE_KEYS.filterChangeDue,
+          { client: client.name, contact: contact.name, contractNo: c.contractNo, date: formatDate(changeOn), days: offset, model: c.installation.model ?? "RO plant" },
+          { phone: contact.phone, clientId: client.id, contactId: contact.id, refType: "amc_contract", refId: c.id, dedupeKey: `filter_change_due:${c.id}:${changeOn}:${offset}` },
+        );
+      }
     }
   }
 
@@ -285,7 +320,7 @@ async function sendDailyReminders(today: string) {
     await remind(
       out.amcExpired,
       TEMPLATE_KEYS.amcExpired,
-      { client: client.name, contact: contact.name, contract_no: c.contractNo, date: formatDate(c.endOn), end_date: formatDate(c.endOn) },
+      { client: client.name, contact: contact.name, contractNo: c.contractNo, date: formatDate(c.endOn), endDate: formatDate(c.endOn) },
       { phone: contact.phone, clientId: client.id, contactId: contact.id, refType: "amc_contract", refId: c.id, dedupeKey: `amc_expired:${c.id}` },
     );
   }
@@ -313,9 +348,9 @@ async function sendDailyReminders(today: string) {
       {
         client: client.name,
         contact: contact.name,
-        contract_no: c.contractNo,
+        contractNo: c.contractNo,
         amount: `₹${due.toLocaleString("en-IN")}`,
-        amount_due: `₹${due.toLocaleString("en-IN")}`,
+        amountDue: `₹${due.toLocaleString("en-IN")}`,
         value: `₹${Number(c.value).toLocaleString("en-IN")}`,
       },
       { phone: contact.phone, clientId: client.id, contactId: contact.id, refType: "amc_contract", refId: c.id, dedupeKey: `payment_due:${c.id}` },
@@ -346,6 +381,7 @@ export async function runDailyJobs() {
   };
 
   const attendanceSummary = await step("attendance", () => closeAttendanceDay(yesterday));
+  const leave = await step("leave", () => runLeaveAccruals(today, tz));
   const reminders = await step("reminders", () => sendDailyReminders(today));
   // Last, so reminders queued above for "now" are sent in this run too.
   const smsProcessed = await step("sms", () => processDueSms());
@@ -355,6 +391,7 @@ export async function runDailyJobs() {
     today,
     attendanceDate: yesterday,
     attendance: attendanceSummary,
+    leave,
     reminders,
     smsProcessed,
     errors,

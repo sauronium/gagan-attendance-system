@@ -1,8 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { type NextRequest, NextResponse } from "next/server";
 
-import { env } from "@/lib/env";
+import { cronAuthorised } from "@/lib/cron-auth";
 import { runDailyJobs } from "@/server/cron";
 
 // Daily job endpoint, called by Hostinger cron (or any scheduler) around
@@ -13,24 +11,8 @@ import { runDailyJobs } from "@/server/cron";
 
 export const dynamic = "force-dynamic";
 
-/** Constant-time string compare, so the secret can't be guessed by timing. */
-function safeEqual(a: string, b: string) {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
-
-function authorised(request: NextRequest): boolean {
-  const secret = env.cronSecret;
-  if (!secret) return false;
-  const header = request.headers.get("authorization") ?? "";
-  const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  const key = request.nextUrl.searchParams.get("key") ?? "";
-  return (bearer !== "" && safeEqual(bearer, secret)) || (key !== "" && safeEqual(key, secret));
-}
-
 async function handle(request: NextRequest) {
-  if (!authorised(request)) {
+  if (!cronAuthorised(request)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   try {

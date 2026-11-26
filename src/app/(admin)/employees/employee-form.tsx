@@ -80,8 +80,8 @@ export function EmployeeForm({
         <FormField label="Mobile number" htmlFor="e-mobile" error={err.mobile} required hint="Used to sign in. 10-digit Indian numbers are fine.">
           <Input id="e-mobile" name="mobile" type="tel" inputMode="tel" required maxLength={20} defaultValue={values.mobile} placeholder="98123 45678" />
         </FormField>
-        <FormField label="Email" htmlFor="e-email" error={err.email}>
-          <Input id="e-email" name="email" type="email" maxLength={191} defaultValue={values.email} />
+        <FormField label="Email" htmlFor="e-email" error={err.email} hint="Optional. Lets them sign in with email instead of mobile.">
+          <Input id="e-email" name="email" type="email" inputMode="email" autoComplete="off" maxLength={191} defaultValue={values.email} placeholder="name@example.com" />
         </FormField>
         <FormField label="Role" htmlFor="e-role" error={err.role} required>
           <NativeSelect id="e-role" name="role" required defaultValue={values.role} options={options.roles} />
@@ -98,7 +98,7 @@ export function EmployeeForm({
         <FormField label="Shift" htmlFor="e-shift" error={err.shiftId} hint="Without a shift the default 9:30–6:30 rules apply.">
           <NativeSelect id="e-shift" name="shiftId" defaultValue={values.shiftId} placeholder="Default shift" options={options.shifts} />
         </FormField>
-        <FormField label="Reporting manager" htmlFor="e-mgr" error={err.managerId} hint="Approves leave and corrections.">
+        <FormField label="Reporting manager" htmlFor="e-mgr" error={err.managerId} hint="Shown on their profile. Leave and corrections are approved by an admin.">
           <NativeSelect id="e-mgr" name="managerId" defaultValue={values.managerId} placeholder="None" options={options.managers} />
         </FormField>
         <FormField label="Leave policy" htmlFor="e-policy" error={err.leavePolicyId} hint={withPassword ? "This year's balances are credited from the policy." : undefined}>

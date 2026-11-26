@@ -15,6 +15,7 @@ import {
   complaints,
   fieldVisits,
   installations,
+  type InstallationStatus,
   serviceVisits,
   smsMessages,
 } from "@/db/schema";
@@ -151,6 +152,154 @@ export async function addInstallation(clientId: number, data: InstallationInput,
   const [row] = await db.insert(installations).values(data).$returningId();
   await logAudit({ actorId, tableName: "installations", recordId: row.id, action: "create", after: { ...data } });
   return row.id;
+}
+
+// ── Editing and removing contacts, sites and plants ──────────
+
+async function contactOf(clientId: number, contactId: number) {
+  const c = await db.query.clientContacts.findFirst({
+    where: and(eq(clientContacts.id, contactId), eq(clientContacts.clientId, clientId)),
+  });
+  if (!c) throw new Error("Contact not found.");
+  return c;
+}
+
+/**
+ * Edit a contact. Ticking "primary" moves the primary flag here; the current
+ * primary can only stop being primary by making another contact primary.
+ */
+export async function updateContact(clientId: number, contactId: number, data: ContactInput, actorId: number) {
+  const before = await contactOf(clientId, contactId);
+  const isPrimary = before.isPrimary || Boolean(data.isPrimary);
+  await db.transaction(async (tx) => {
+    if (isPrimary && !before.isPrimary) {
+      await tx.update(clientContacts).set({ isPrimary: false }).where(eq(clientContacts.clientId, clientId));
+    }
+    await tx
+      .update(clientContacts)
+      .set({
+        ...data,
+        isPrimary,
+        optedOutAt: data.smsOptIn ? null : (before.optedOutAt ?? new Date()),
+      })
+      .where(eq(clientContacts.id, contactId));
+  });
+  await logAudit({
+    actorId,
+    tableName: "client_contacts",
+    recordId: contactId,
+    action: "update",
+    before: { name: before.name, phone: before.phone, email: before.email, isPrimary: before.isPrimary, smsOptIn: before.smsOptIn },
+    after: { ...data, isPrimary },
+  });
+}
+
+/** Remove a contact. Past SMS keep their text and number. A removed primary hands over to the next contact. */
+export async function deleteContact(clientId: number, contactId: number, actorId: number) {
+  const before = await contactOf(clientId, contactId);
+  await db.transaction(async (tx) => {
+    await tx.update(smsMessages).set({ contactId: null }).where(eq(smsMessages.contactId, contactId));
+    await tx.delete(clientContacts).where(eq(clientContacts.id, contactId));
+    if (before.isPrimary) {
+      const [next] = await tx
+        .select({ id: clientContacts.id })
+        .from(clientContacts)
+        .where(eq(clientContacts.clientId, clientId))
+        .orderBy(asc(clientContacts.id))
+        .limit(1);
+      if (next) await tx.update(clientContacts).set({ isPrimary: true }).where(eq(clientContacts.id, next.id));
+    }
+  });
+  await logAudit({
+    actorId,
+    tableName: "client_contacts",
+    recordId: contactId,
+    action: "delete",
+    before: { clientId, name: before.name, phone: before.phone, isPrimary: before.isPrimary },
+  });
+}
+
+async function siteOf(clientId: number, siteId: number) {
+  const site = await db.query.clientSites.findFirst({
+    where: and(eq(clientSites.id, siteId), eq(clientSites.clientId, clientId)),
+  });
+  if (!site) throw new Error("Site not found.");
+  return site;
+}
+
+export async function updateSite(clientId: number, siteId: number, data: SiteInput, actorId: number) {
+  const before = await siteOf(clientId, siteId);
+  await db.update(clientSites).set(data).where(eq(clientSites.id, siteId));
+  await logAudit({
+    actorId,
+    tableName: "client_sites",
+    recordId: siteId,
+    action: "update",
+    before: { addressLine: before.addressLine, area: before.area, city: before.city, lat: before.lat, lng: before.lng },
+    after: data,
+  });
+}
+
+/** Remove a site that has no plants. Field visits logged there keep their GPS and notes. */
+export async function deleteSite(clientId: number, siteId: number, actorId: number) {
+  const before = await siteOf(clientId, siteId);
+  const plant = await db.query.installations.findFirst({ where: eq(installations.siteId, siteId), columns: { id: true } });
+  if (plant) throw new Error("This site has plants. Move or remove them first (removed plants keep their history here).");
+  await db.transaction(async (tx) => {
+    await tx.update(fieldVisits).set({ siteId: null }).where(eq(fieldVisits.siteId, siteId));
+    await tx.delete(clientSites).where(eq(clientSites.id, siteId));
+  });
+  await logAudit({
+    actorId,
+    tableName: "client_sites",
+    recordId: siteId,
+    action: "delete",
+    before: { clientId, addressLine: before.addressLine, area: before.area, city: before.city },
+  });
+}
+
+/**
+ * Edit a plant, including moving it to another of the client's sites or
+ * marking it removed. Plants are never deleted: contracts, visits and
+ * complaints refer to them.
+ */
+export async function updateInstallation(
+  clientId: number,
+  installationId: number,
+  data: InstallationInput & { status: InstallationStatus },
+  actorId: number,
+) {
+  const before = await db.query.installations.findFirst({
+    where: eq(installations.id, installationId),
+    with: { site: { columns: { clientId: true } } },
+  });
+  if (!before || before.site.clientId !== clientId) throw new Error("Plant not found.");
+  await siteOf(clientId, data.siteId);
+  if (data.installedOn && data.warrantyUntil && data.warrantyUntil < data.installedOn) {
+    throw new Error("Warranty end is before the installation date.");
+  }
+  if (data.status === "removed" && before.status !== "removed") {
+    const live = await db.query.amcContracts.findFirst({
+      where: and(eq(amcContracts.installationId, installationId), eq(amcContracts.status, "active")),
+      columns: { contractNo: true },
+    });
+    if (live) throw new Error(`Cancel AMC ${live.contractNo} before marking this plant removed.`);
+  }
+  await db.update(installations).set(data).where(eq(installations.id, installationId));
+  await logAudit({
+    actorId,
+    tableName: "installations",
+    recordId: installationId,
+    action: "update",
+    before: {
+      siteId: before.siteId,
+      model: before.model,
+      serialNo: before.serialNo,
+      capacityLph: before.capacityLph,
+      status: before.status,
+    },
+    after: data,
+  });
 }
 
 export type ClientContactInfo = {

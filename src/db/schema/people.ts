@@ -114,7 +114,7 @@ export const employees = mysqlTable(
     departmentId: ref().references(() => departments.id),
     designation: varchar({ length: 100 }),
     shiftId: ref().references(() => shifts.id),
-    /** Approves this employee's leave and regularisation requests. */
+    /** Reporting manager (shown on the profile; approvals are done by admins). */
     managerId: ref().references((): AnyMySqlColumn => employees.id),
     leavePolicyId: ref().references(() => leavePolicies.id),
     workType: varchar({ length: 10 })

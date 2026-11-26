@@ -274,7 +274,7 @@ async function Balances({ year }: { year: number }) {
         </Table>
       </Card>
       <p className="text-xs text-muted-foreground">
-        Left = opening + credited + adjustments − used. Monthly accrual and year-end carry forward run automatically.
+        Left = opening (carried forward) + credited + adjustments − used. The daily job credits yearly quotas on 1 January, monthly accrual each month, and carries balances into the new year up to each type&apos;s limit.
       </p>
     </>
   );

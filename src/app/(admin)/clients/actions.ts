@@ -4,12 +4,23 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { clientSegments, clientStatuses, clientTypes } from "@/db/schema";
+import { clientSegments, clientStatuses, clientTypes, installationStatuses } from "@/db/schema";
 import { type ActionState, actionError, formToObject, zf } from "@/lib/action";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { assertViewer } from "@/lib/session";
-import { addContact, addInstallation, addSite, createClient, updateClient } from "@/server/clients";
+import {
+  addContact,
+  addInstallation,
+  addSite,
+  createClient,
+  deleteContact,
+  deleteSite,
+  updateClient,
+  updateContact,
+  updateInstallation,
+  updateSite,
+} from "@/server/clients";
 
 function refresh() {
   revalidatePath("/clients", "layout");
@@ -195,41 +206,110 @@ export async function addSiteAction(_: ActionState, fd: FormData): Promise<Actio
   }
 }
 
+const installationSchema = z.object({
+  siteId: zf.id(),
+  plantType: zf.optText(50),
+  capacityLph: z.coerce.number().int().min(1).max(10_000_000).optional(),
+  model: zf.optText(100),
+  serialNo: zf.optText(100),
+  membraneSpec: zf.optText(150),
+  installedOn: zf.optDate(),
+  warrantyUntil: zf.optDate(),
+  notes: zf.optText(2000),
+});
+
+function installationData(d: z.infer<typeof installationSchema>) {
+  return {
+    siteId: d.siteId,
+    plantType: d.plantType ?? null,
+    capacityLph: d.capacityLph ?? null,
+    model: d.model ?? null,
+    serialNo: d.serialNo ?? null,
+    membraneSpec: d.membraneSpec ?? null,
+    installedOn: d.installedOn ?? null,
+    warrantyUntil: d.warrantyUntil ?? null,
+    notes: d.notes ?? null,
+  };
+}
+
 export async function addInstallationAction(_: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const viewer = await assertViewer(ADMIN_ROLES);
     const raw = formToObject(fd);
     const clientId = zf.id().parse(raw.clientId);
-    const data = z
-      .object({
-        siteId: zf.id(),
-        plantType: zf.optText(50),
-        capacityLph: z.coerce.number().int().min(1).max(10_000_000).optional(),
-        model: zf.optText(100),
-        serialNo: zf.optText(100),
-        membraneSpec: zf.optText(150),
-        installedOn: zf.optDate(),
-        warrantyUntil: zf.optDate(),
-        notes: zf.optText(2000),
-      })
-      .parse(raw);
-    await addInstallation(
-      clientId,
-      {
-        siteId: data.siteId,
-        plantType: data.plantType ?? null,
-        capacityLph: data.capacityLph ?? null,
-        model: data.model ?? null,
-        serialNo: data.serialNo ?? null,
-        membraneSpec: data.membraneSpec ?? null,
-        installedOn: data.installedOn ?? null,
-        warrantyUntil: data.warrantyUntil ?? null,
-        notes: data.notes ?? null,
-      },
-      viewer.employee.id,
-    );
+    const data = installationSchema.parse(raw);
+    await addInstallation(clientId, installationData(data), viewer.employee.id);
     refresh();
     return { ok: true, message: "Plant added." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function updateInstallationAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const raw = formToObject(fd);
+    const clientId = zf.id().parse(raw.clientId);
+    const id = zf.id().parse(raw.id);
+    const data = installationSchema.extend({ status: z.enum(installationStatuses) }).parse(raw);
+    await updateInstallation(clientId, id, { ...installationData(data), status: data.status }, viewer.employee.id);
+    refresh();
+    return { ok: true, message: data.status === "removed" ? "Plant marked removed." : "Plant saved." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function updateContactAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const raw = formToObject(fd);
+    const clientId = zf.id().parse(raw.clientId);
+    const id = zf.id().parse(raw.id);
+    const data = contactSchema.parse(raw);
+    await updateContact(clientId, id, contactData(data), viewer.employee.id);
+    refresh();
+    return { ok: true, message: `Contact ${data.name} saved.` };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function deleteContactAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const { clientId, id } = z.object({ clientId: zf.id(), id: zf.id() }).parse(formToObject(fd));
+    await deleteContact(clientId, id, viewer.employee.id);
+    refresh();
+    return { ok: true, message: "Contact removed." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function updateSiteAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const raw = formToObject(fd);
+    const clientId = zf.id().parse(raw.clientId);
+    const id = zf.id().parse(raw.id);
+    const data = siteSchema.parse(raw);
+    await updateSite(clientId, id, siteData(data), viewer.employee.id);
+    refresh();
+    return { ok: true, message: "Site saved." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function deleteSiteAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const { clientId, id } = z.object({ clientId: zf.id(), id: zf.id() }).parse(formToObject(fd));
+    await deleteSite(clientId, id, viewer.employee.id);
+    refresh();
+    return { ok: true, message: "Site removed." };
   } catch (e) {
     return actionError(e);
   }

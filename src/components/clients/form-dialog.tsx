@@ -2,7 +2,7 @@
 
 import { type ReactElement, type ReactNode, useActionState, useCallback, useState } from "react";
 
-import { FormError, SubmitButton, useActionToast } from "@/components/app/form-bits";
+import { FormError, SubmitButton, useActionToast, useToastedAction } from "@/components/app/form-bits";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,9 +44,9 @@ export function FormDialog({
   children: (state: ActionState) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useActionState(action, initialActionState);
+  const [state, formAction] = useActionState(useToastedAction(action), initialActionState);
   const close = useCallback(() => setOpen(false), []);
-  useActionToast(state, close);
+  useActionToast(state, close, { silent: true });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

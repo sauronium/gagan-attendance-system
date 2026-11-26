@@ -46,7 +46,7 @@ export default async function LoginPage({
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Sign in</h2>
           <p className="mt-1 mb-6 text-sm text-muted-foreground">
-            Use the mobile number and password from your office admin.
+            Use your mobile number or email and the password from your office admin.
           </p>
           {orphan ? (
             <div className="mb-6 flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-warning">

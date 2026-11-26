@@ -5,7 +5,9 @@ import { badgeFrom } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { renewContractAction } from "@/app/(admin)/amc/actions";
+import { cancelContractAction, recordPaymentAction, renewContractAction } from "@/app/(admin)/amc/actions";
+import { FormField } from "@/components/app/form-bits";
+import { Input } from "@/components/ui/input";
 import { contractStatus, labelOf, paymentStatus } from "@/lib/labels";
 import { addDays, daysBetween, formatDate } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,42 @@ function RenewButton({ id, contractNo, endOn }: { id: number; contractNo: string
       description={`A new contract starts ${formatDate(addDays(endOn, 1))} with the same plan, length, value and visits per year. Its service visits are scheduled and the client gets an SMS.`}
       confirmLabel="Renew"
       trigger={<Button size="sm" variant="outline">Renew</Button>}
+    />
+  );
+}
+
+function PaymentButton({ id, contractNo, value, paid }: { id: number; contractNo: string; value: string; paid: string }) {
+  const due = Math.max(0, Number(value) - Number(paid));
+  return (
+    <ActionDialog
+      action={recordPaymentAction}
+      hidden={{ id }}
+      title={`Record payment · ${contractNo}`}
+      description={`Contract value ${formatInr(value)}, paid so far ${formatInr(paid)}, due ${formatInr(due)}.`}
+      remark="optional"
+      remarkPlaceholder="e.g. Cheque no. 123456, UPI ref…"
+      confirmLabel="Record payment"
+      trigger={<Button size="sm" variant="outline">Payment</Button>}
+    >
+      <FormField label="Amount received (₹)" htmlFor={`pay-${id}`} required>
+        <Input id={`pay-${id}`} name="amount" type="number" inputMode="decimal" min={1} max={due} step="0.01" required defaultValue={due || undefined} />
+      </FormField>
+    </ActionDialog>
+  );
+}
+
+function CancelButton({ id, contractNo }: { id: number; contractNo: string }) {
+  return (
+    <ActionDialog
+      action={cancelContractAction}
+      hidden={{ id }}
+      title={`Cancel ${contractNo}?`}
+      description="The contract is marked cancelled and its upcoming service visits are cancelled. Visits already done are kept. The client is not sent an SMS."
+      remark="required"
+      remarkPlaceholder="Why is it being cancelled? Kept in the audit log."
+      confirmLabel="Cancel contract"
+      destructive
+      trigger={<Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">Cancel</Button>}
     />
   );
 }
@@ -123,9 +161,17 @@ export function ContractsTable({
                   <ExpiryCell endOn={k.endOn} status={k.status} today={today} />
                 </TableCell>
                 <TableCell className="text-right">
-                  {k.status === "active" || k.status === "expired" ? (
-                    <RenewButton id={k.id} contractNo={k.contractNo} endOn={k.endOn} />
-                  ) : null}
+                  <div className="flex justify-end gap-1.5 whitespace-nowrap">
+                    {k.paymentStatus !== "paid" && k.status !== "cancelled" ? (
+                      <PaymentButton id={k.id} contractNo={k.contractNo} value={k.value} paid={k.amountPaid} />
+                    ) : null}
+                    {k.status === "active" || k.status === "expired" ? (
+                      <>
+                        <RenewButton id={k.id} contractNo={k.contractNo} endOn={k.endOn} />
+                        <CancelButton id={k.id} contractNo={k.contractNo} />
+                      </>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             );

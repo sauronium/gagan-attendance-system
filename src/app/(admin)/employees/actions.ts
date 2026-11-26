@@ -16,6 +16,7 @@ import {
   createEmployeeLogin,
   employeeSchema,
   passwordSchema,
+  resetEmployeeDevice,
   resetEmployeePassword,
   updateEmployee,
 } from "@/server/employees";
@@ -67,7 +68,7 @@ export async function updateEmployeeAction(_: ActionState, fd: FormData): Promis
     const viewer = await assertViewer(ADMIN_ROLES);
     const id = zf.id().parse(fd.get("id"));
     const input = employeeSchema.parse(formToObject(fd));
-    await updateEmployee(id, input, locationIds(fd), viewer);
+    await updateEmployee(id, input, locationIds(fd), viewer, todayIso(env.timezone));
     refresh(id);
     return { ok: true, message: "Employee details saved." };
   } catch (e) {
@@ -110,13 +111,25 @@ export async function resetPasswordAction(_: ActionState, fd: FormData): Promise
   }
 }
 
+export async function resetDeviceAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const id = zf.id().parse(fd.get("id"));
+    await resetEmployeeDevice(id, viewer);
+    refresh(id);
+    return { ok: true, message: "Registered phone cleared. The next check-in registers the new phone." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
 export async function createLoginAction(_: ActionState, fd: FormData): Promise<ActionState> {
   try {
     const viewer = await assertViewer(ADMIN_ROLES);
     const id = zf.id().parse(fd.get("id"));
     await createEmployeeLogin(id, password(fd), viewer);
     refresh(id);
-    return { ok: true, message: "Login created. The employee can sign in with their mobile number." };
+    return { ok: true, message: "Login created. The employee can now sign in." };
   } catch (e) {
     return actionError(e);
   }

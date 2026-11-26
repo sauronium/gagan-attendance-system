@@ -13,7 +13,7 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 | App | Next.js 16 (App Router), React 19, TypeScript |
 | UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme (light) |
 | Data | MySQL 8, Drizzle ORM (`casing: snake_case`) |
-| Auth | Better Auth: mobile number + password (phone-number plugin) |
+| Auth | Better Auth: mobile number or email + password (phone-number plugin + email/password) |
 | Files | Cloudflare R2, or `.data/uploads/` locally when R2 isn't configured |
 | SMS | Built-in **demo SMS API** (messages show in an in-app inbox); live provider later |
 | Maps | Leaflet + OpenStreetMap |
@@ -24,12 +24,12 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 2. **Configure:** fill in `.env` (template: `.env.example`). The minimum is:
    - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: an empty MySQL 8 database (utf8mb4)
    - `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `BETTER_AUTH_URL` (e.g. `http://localhost:3000`)
-   - `SEED_ADMIN_MOBILE` and `SEED_ADMIN_PASSWORD`: the first Super Admin login
+   - `SEED_ADMIN_MOBILE` and `SEED_ADMIN_PASSWORD` (and optionally `SEED_ADMIN_EMAIL`): the first Super Admin login
 3. **Create tables:** `npm run db:migrate`
-4. **Create the first login:** `npm run db:seed`. To also load demo staff, attendance, clients, AMC contracts, visits and SMS, run `npm run db:seed -- --demo`.
-5. **Run:** `npm run dev`, open http://localhost:3000 and sign in with the admin mobile number and password.
+4. **Create the first login:** `npm run db:seed` (also adds the default SMS templates).
+5. **Run:** `npm run dev`, open http://localhost:3000 and sign in with the admin mobile number (or email) and password.
 
-The demo staff logins use `SEED_DEMO_PASSWORD`, with mobiles `98100 00002` to `98100 00014`. For example, `9810000008` is a sales executive and `9810000011` is a technician.
+Everyone signs in with their mobile number, or with their email if one is set on their employee record.
 
 ## Agent skills
 
@@ -49,7 +49,7 @@ npx skills experimental_install
 | `npm run db:generate` | New migration from schema changes (`drizzle/`) |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:studio` | Browse the database |
-| `npm run db:seed [-- --demo]` | First admin (+ demo data) |
+| `npm run db:seed` | First admin + SMS templates |
 
 ## Roles
 
@@ -62,13 +62,19 @@ npx skills experimental_install
 
 Self sign-up is disabled. Admins create logins on **Employees → Add employee**.
 
-## Daily job
+## Scheduled jobs
 
-`/api/cron/daily` marks yesterday's absences, week offs and missed punches, sends due service and renewal reminders, and sends queued SMS. Call it once a day (e.g. Hostinger cron at 09:00 IST):
+Two endpoints, both protected by `CRON_SECRET` (as a Bearer token or `?key=`):
+
+- `/api/cron/daily`, once a day (e.g. Hostinger cron at 09:00 IST): marks yesterday's absences, week offs, holidays and missed punches; credits leave (yearly quota, monthly accrual, carry forward into a new year); sends service, filter-change, renewal, expiry and payment reminders; and sends queued SMS.
+- `/api/cron/sms`, every 5–15 minutes: sends SMS scheduled from **Messages → Compose** when their time comes.
 
 ```bash
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/daily
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/sms
 ```
+
+Both are safe to run more than once.
 
 ## SMS
 
@@ -89,6 +95,6 @@ src/
   db/schema               Drizzle tables + relations
   lib/                    auth, session, time, sms, storage, rules, labels
   server/                 server-only data and business logic
-scripts/seed.ts           first admin + demo data
+scripts/seed.ts           first admin + SMS templates
 drizzle/                  SQL migrations
 ```

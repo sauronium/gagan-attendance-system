@@ -5,15 +5,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { placeholderEmail } from "@/lib/login-email";
 
 // Admin-side login management. Self sign-up is disabled, so logins are
 // created here when an admin adds an employee. Uses Better Auth's internal
 // adapter so passwords are hashed exactly as Better Auth expects.
-
-/** Placeholder email for staff without one (Better Auth requires an email). */
-function placeholderEmail(empCode: string) {
-  return `${empCode.toLowerCase().replace(/[^a-z0-9]/g, "")}@staff.agamops.invalid`;
-}
 
 export async function createLogin(input: {
   name: string;

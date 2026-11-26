@@ -4,7 +4,7 @@ import { CameraIcon, LogInIcon, LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useState } from "react";
 
-import { FormError, SubmitButton, useActionToast } from "@/components/app/form-bits";
+import { FormError, SubmitButton, useActionToast, useToastedAction } from "@/components/app/form-bits";
 import { CameraCapture } from "@/components/staff/camera-capture";
 import { getDeviceId } from "@/components/staff/device-id";
 import { GpsStatus } from "@/components/staff/gps-status";
@@ -29,14 +29,14 @@ export function PunchFlow({ mode, watermark }: { mode: "in" | "out"; watermark: 
   const [photo, setPhoto] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState("");
   const geo = useGeolocation({ enabled: open });
-  const [state, formAction] = useActionState(mode === "in" ? checkInAction : checkOutAction, initialActionState);
+  const [state, formAction] = useActionState(useToastedAction(mode === "in" ? checkInAction : checkOutAction), initialActionState);
 
   const onSuccess = useCallback(() => {
     setOpen(false);
     setPhoto(null);
     router.refresh();
   }, [router]);
-  useActionToast(state, onSuccess);
+  useActionToast(state, onSuccess, { silent: true });
 
   const openSheet = () => {
     setDeviceId(getDeviceId());

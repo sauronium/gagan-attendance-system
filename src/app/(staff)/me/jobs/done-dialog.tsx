@@ -3,7 +3,7 @@
 import { CameraIcon, CheckIcon, XIcon } from "lucide-react";
 import { useActionState, useCallback, useState } from "react";
 
-import { FormError, FormField, SubmitButton, useActionToast } from "@/components/app/form-bits";
+import { FormError, FormField, SubmitButton, useActionToast, useToastedAction } from "@/components/app/form-bits";
 import { CameraCapture } from "@/components/staff/camera-capture";
 import { GpsStatus } from "@/components/staff/gps-status";
 import { useGeolocation } from "@/components/staff/use-geolocation";
@@ -42,13 +42,13 @@ export function DoneDialog({
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const geo = useGeolocation({ enabled: open && photoOpen });
-  const [state, action] = useActionState(completeJobAction, initialActionState);
+  const [state, action] = useActionState(useToastedAction(completeJobAction), initialActionState);
   const close = useCallback(() => {
     setOpen(false);
     setPhoto(null);
     setPhotoOpen(false);
   }, []);
-  useActionToast(state, close);
+  useActionToast(state, close, { silent: true });
   const fe = state.fieldErrors ?? {};
   const id = (s: string) => `job-${visitId}-${s}`;
 

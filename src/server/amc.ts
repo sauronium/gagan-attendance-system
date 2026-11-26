@@ -307,6 +307,61 @@ export async function renewContract(id: number, actorId: number): Promise<number
   return newId;
 }
 
+/** Record money received against a contract; updates the payment status. */
+export async function recordContractPayment(
+  id: number,
+  input: { amount: number; remark?: string | null },
+  actorId: number,
+) {
+  const k = await db.query.amcContracts.findFirst({ where: eq(amcContracts.id, id) });
+  if (!k) throw new Error("Contract not found.");
+  if (!(input.amount > 0)) throw new Error("Enter the amount received.");
+  const due = Math.max(0, Number(k.value) - Number(k.amountPaid));
+  if (due <= 0) throw new Error("This contract is already fully paid.");
+  if (input.amount > due + 0.001) throw new Error(`Only ${formatInr(due)} is due on this contract.`);
+
+  const amountPaid = (Number(k.amountPaid) + input.amount).toFixed(2);
+  const paymentStatus = paymentStatusFor(k.value, amountPaid);
+  await db.update(amcContracts).set({ amountPaid, paymentStatus }).where(eq(amcContracts.id, id));
+  await logAudit({
+    actorId,
+    tableName: "amc_contracts",
+    recordId: id,
+    action: "update",
+    before: { amountPaid: k.amountPaid, paymentStatus: k.paymentStatus },
+    after: { amountPaid, paymentStatus, received: input.amount.toFixed(2) },
+    reason: input.remark ?? "Payment received",
+  });
+  return { amountPaid, paymentStatus, due: Math.max(0, Number(k.value) - Number(amountPaid)) };
+}
+
+/** Cancel a contract: future scheduled visits are cancelled too. No SMS. */
+export async function cancelContract(id: number, reason: string, actorId: number) {
+  const k = await db.query.amcContracts.findFirst({ where: eq(amcContracts.id, id) });
+  if (!k) throw new Error("Contract not found.");
+  if (k.status === "cancelled") throw new Error("This contract is already cancelled.");
+  if (k.status === "renewed") throw new Error("This contract was renewed. Cancel the new contract instead.");
+
+  const cancelledVisits = await db.transaction(async (tx) => {
+    await tx.update(amcContracts).set({ status: "cancelled" }).where(eq(amcContracts.id, id));
+    const [res] = await tx
+      .update(serviceVisits)
+      .set({ status: "cancelled", notes: `Contract cancelled: ${reason}`.slice(0, 2000) })
+      .where(and(eq(serviceVisits.contractId, id), eq(serviceVisits.status, "scheduled")));
+    return res.affectedRows;
+  });
+  await logAudit({
+    actorId,
+    tableName: "amc_contracts",
+    recordId: id,
+    action: "update",
+    before: { status: k.status },
+    after: { status: "cancelled", cancelledVisits },
+    reason,
+  });
+  return { cancelledVisits };
+}
+
 // ── Service visits ───────────────────────────────────────────
 
 /** SMS the client (technician_assigned) and the technician (technician_job). */
