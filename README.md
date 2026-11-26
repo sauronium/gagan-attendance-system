@@ -14,9 +14,10 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 | UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme (light) |
 | Data | MySQL 8, Drizzle ORM (`casing: snake_case`) |
 | Auth | Better Auth: mobile number or email + password (phone-number plugin + email/password) |
-| Files | Cloudflare R2, or `.data/uploads/` locally when R2 isn't configured |
+| Files | Hostinger FTP or Cloudflare R2 (R2 preferred on Vercel); `.data/uploads/` locally in development |
 | SMS | Built-in **demo SMS API** (messages show in an in-app inbox); live provider later |
 | Maps | Leaflet + OpenStreetMap |
+| Hosting | Vercel (see [Deploying to Vercel](#deploying-to-vercel)) or any Node host |
 
 ## Getting started
 
@@ -76,7 +77,34 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron
 
 Both are safe to run more than once.
 
-## SMS
+## Deploying to Vercel
+
+`vercel.json` pins the functions to Mumbai (`bom1`, close to the Hostinger database and to staff) and schedules the daily job at 09:00 IST.
+
+1. **Database access.** Vercel has no fixed IP addresses, so in Hostinger hPanel → *Databases → Remote MySQL*, allow connections from any host (`%`) for the app's database user, and use the server's IP or `srvNNNN.hstgr.io` host as `DB_HOST`. Run `npm run db:migrate` (and `npm run db:seed` on a fresh database) from your own computer.
+2. **File storage.** Vercel's disk is read-only, so photos need R2 or FTP. R2 is recommended (`R2_*`); Hostinger FTP (`FTP_*` + `STORAGE_URL`) also works. Pick one and keep it: photos saved to one aren't visible through the other. If both are set, Vercel uses R2.
+3. **Import the repository** in Vercel (framework: Next.js, default build settings).
+4. **Environment variables** (Project → Settings → Environment Variables), for Production and Preview:
+
+   | Variable | Value |
+   |---|---|
+   | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Hostinger database |
+   | `DB_CONNECTION_LIMIT` | `3` (per function instance; Hostinger also caps new connections per hour) |
+   | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
+   | `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | Production URL, e.g. `https://ops.agamwater.in` (or the `*.vercel.app` one). Preview deployments work without changes. |
+   | `CRON_SECRET` | Random string, 16+ characters. Vercel sends it automatically to the cron job. |
+   | `APP_TIMEZONE` | `Asia/Kolkata` |
+   | `R2_*` or `FTP_*` + `STORAGE_URL` + `FILES_SECRET` | File storage (step 2) |
+   | `SMS_*`, `NEXT_PUBLIC_MAP_*` | As in `.env.example` |
+
+   Do not set the `SEED_*` values in Vercel; they are only for `npm run db:seed` on your computer.
+5. **Deploy**, then sign in with the Super Admin account.
+
+**Scheduled SMS.** The daily job (in `vercel.json`) runs on every Vercel plan. Messages scheduled from **Messages → Compose** also need `/api/cron/sms` every 5–15 minutes:
+
+- On the **Pro** plan, add it to `vercel.json`: `{ "path": "/api/cron/sms", "schedule": "*/10 * * * *" }`. The Hobby plan only allows daily crons, and a deployment with a more frequent schedule fails.
+- On **Hobby**, use any external scheduler (e.g. cron-job.org) to call `https://<your-domain>/api/cron/sms?key=<CRON_SECRET>` every 10 minutes. Without it, scheduled messages go out with the next morning's daily job.
+
 
 `SMS_PROVIDER=demo` (the default) never contacts a phone network. Every message is stored and shown under **Messages → Inbox**, and `SMS_DEMO_FAILURE_RATE` simulates failures. To go live, choose a provider, register DLT templates, set `SMS_PROVIDER=live` with `SMS_API_URL`/`SMS_API_KEY`, and adapt `deliverLive()` in `src/lib/sms.ts` to that provider's API.
 

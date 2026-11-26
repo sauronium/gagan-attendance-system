@@ -10,6 +10,8 @@ import { runDailyJobs } from "@/server/cron";
 // Disabled (always 401) while CRON_SECRET is blank.
 
 export const dynamic = "force-dynamic";
+// Seconds the job may run (Vercel function limit).
+export const maxDuration = 120;
 
 async function handle(request: NextRequest) {
   if (!cronAuthorised(request)) {

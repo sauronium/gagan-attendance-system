@@ -8,6 +8,7 @@ import { phoneNumber } from "better-auth/plugins/phone-number";
 
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema";
+import { vercelBaseURL } from "@/lib/auth-base-url";
 import { brand } from "@/lib/brand";
 import { isPlaceholderEmail } from "@/lib/login-email";
 import { isValidPhone } from "@/lib/phone";
@@ -21,8 +22,10 @@ import { sendSms } from "@/lib/sms";
 // - Phone OTP endpoints are disabled (see disabledPaths). sendOTP stays wired
 //   to the SMS adapter so OTP login can be switched on later by removing them.
 // BETTER_AUTH_SECRET and BETTER_AUTH_URL are read from the environment.
+
 export const auth = betterAuth({
   appName: brand.appName,
+  baseURL: vercelBaseURL(),
   database: drizzleAdapter(db, {
     provider: "mysql",
     schema: { user, session, account, verification },
@@ -45,8 +48,8 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    // Hostinger serves the app behind a proxy: take the client IP from its
-    // headers so rate limits apply per person, not to everyone at once.
+    // The app runs behind a proxy (Vercel or Hostinger): take the client IP
+    // from its headers so rate limits apply per person, not to everyone.
     ipAddress: { ipAddressHeaders: ["x-forwarded-for", "x-real-ip"] },
   },
   hooks: {

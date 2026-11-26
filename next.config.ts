@@ -32,6 +32,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  experimental: {
+    serverActions: {
+      // Check-in and visit photos are sent to server actions as data URLs
+      // (downscaled to ~720 px, normally well under 1 MB). Allow headroom while
+      // staying below Vercel's 4.5 MB request limit.
+      bodySizeLimit: "3mb",
+    },
+  },
   images: {
     // Check-in and visit photos are served by our own /api/files route.
     localPatterns: [{ pathname: "/brand/**" }, { pathname: "/api/files/**" }],

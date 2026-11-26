@@ -15,7 +15,10 @@ import { env, ftpConfigured, r2Configured } from "@/lib/env";
 // 1. Hostinger FTP (FTP_* + STORAGE_URL): upload over FTPS into the site's
 //    web root, read back over HTTPS from STORAGE_URL.
 // 2. Cloudflare R2 (R2_*).
-// 3. Local disk under .data/uploads/ (development fallback).
+// 3. Local disk under .data/uploads/ (development fallback only; Vercel's
+//    file system is read-only, so a deployment there must set R2_* or FTP_*).
+// On Vercel, R2 is preferred when both are configured: it is plain HTTPS,
+// while FTP opens a new control connection for every upload.
 //
 // The app never links to a storage URL directly: browsers always go through
 // /api/files/<key>, which checks the viewer's permission first. Because the
@@ -115,11 +118,25 @@ const r2Url = (key: string) =>
 
 // ── Public API ───────────────────────────────────────────────
 
+type Backend = "ftp" | "r2" | "local";
+
+function backend(): Backend {
+  const vercel = Boolean(process.env.VERCEL);
+  if (vercel && r2Configured()) return "r2";
+  if (ftpConfigured()) return "ftp";
+  if (r2Configured()) return "r2";
+  if (vercel) {
+    throw new Error("File storage is not configured. Set the R2_* (or FTP_* and STORAGE_URL) environment variables in Vercel.");
+  }
+  return "local";
+}
+
 export async function putFile(key: string, data: Uint8Array, contentType: string): Promise<string> {
   const k = safeKey(key);
-  if (ftpConfigured()) {
+  const where = backend();
+  if (where === "ftp") {
     await ftpPut(k, data);
-  } else if (r2Configured()) {
+  } else if (where === "r2") {
     const res = await r2().fetch(r2Url(k), {
       method: "PUT",
       body: data as BodyInit,
@@ -137,11 +154,12 @@ export async function putFile(key: string, data: Uint8Array, contentType: string
 export async function getFile(key: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   const k = safeKey(key);
   const contentType = typeOf(k);
-  if (ftpConfigured()) {
+  const where = backend();
+  if (where === "ftp") {
     const data = await ftpGet(k);
     return data ? { data, contentType } : null;
   }
-  if (r2Configured()) {
+  if (where === "r2") {
     const res = await r2().fetch(r2Url(k));
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
