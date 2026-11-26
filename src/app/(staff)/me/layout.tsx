@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { StaffNav } from "@/components/app/staff-nav";
 import { SignOutButton } from "@/components/app/sign-out-button";
-import { ThemeToggle } from "@/components/app/theme";
 import { buttonVariants } from "@/components/ui/button";
 import { requireViewer } from "@/lib/session";
 
@@ -27,7 +26,6 @@ export default async function StaffLayout({ children }: { children: React.ReactN
                 <LayoutDashboardIcon /> Admin
               </Link>
             ) : null}
-            <ThemeToggle />
             <SignOutButton label="" className="size-8 justify-center px-0" />
           </div>
         </div>

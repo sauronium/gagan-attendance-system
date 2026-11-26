@@ -12,10 +12,7 @@ type LogoProps = {
   priority?: boolean;
 };
 
-/**
- * Agam Water Industries logo. The artwork is designed for light backgrounds,
- * so in dark mode it sits on a white chip to keep the navy and orange legible.
- */
+/** Agam Water Industries logo (artwork made for light backgrounds). */
 export function Logo({
   variant = "full",
   height = 40,
@@ -28,7 +25,7 @@ export function Logo({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-brand dark:bg-white dark:px-2 dark:py-1",
+        "inline-flex items-center rounded-brand",
         className,
       )}
     >

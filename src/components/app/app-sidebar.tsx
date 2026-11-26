@@ -20,7 +20,6 @@ import type { ComponentType } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { SignOutButton } from "@/components/app/sign-out-button";
-import { ThemeToggle } from "@/components/app/theme";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sidebar,
@@ -107,7 +106,7 @@ export function AppSidebar({
       <SidebarHeader className="px-3 pt-4 pb-2">
         <Link href="/dashboard" className="flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-sidebar-ring">
           <span className="rounded-lg bg-white p-1 group-data-[collapsible=icon]:p-0.5">
-            <Logo variant="mark" height={28} className="dark:bg-transparent dark:p-0" />
+            <Logo variant="mark" height={28} />
           </span>
           <span className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold text-sidebar-accent-foreground">Agam Ops</span>
@@ -173,7 +172,6 @@ export function AppSidebar({
             <div className="truncate text-sm font-medium text-sidebar-accent-foreground">{name}</div>
             <div className="truncate text-xs text-sidebar-foreground/70">{roleLabel}</div>
           </div>
-          <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden" />
         </div>
         <SignOutButton className="w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden" />
       </SidebarFooter>

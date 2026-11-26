@@ -12,7 +12,7 @@ import type { TimelineItem, TimelineKind } from "@/server/clients";
 const kinds: Record<TimelineKind, { icon: ReactNode; className: string; label: string }> = {
   field_visit: { icon: <MapPinnedIcon />, className: "bg-info-soft text-info", label: "Field visit" },
   service: { icon: <WrenchIcon />, className: "bg-success-soft text-success", label: "Service" },
-  complaint: { icon: <BellRingIcon />, className: "bg-destructive/10 text-destructive dark:bg-destructive/20", label: "Complaint" },
+  complaint: { icon: <BellRingIcon />, className: "bg-destructive/10 text-destructive", label: "Complaint" },
   sms: { icon: <MessageSquareTextIcon />, className: "bg-secondary text-secondary-foreground", label: "SMS" },
   contract: { icon: <FileCheck2Icon />, className: "bg-warning-soft text-warning", label: "Contract" },
 };

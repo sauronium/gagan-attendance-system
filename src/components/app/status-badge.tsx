@@ -4,7 +4,7 @@ import type { Tone } from "@/lib/labels";
 const toneClass: Record<Tone, string> = {
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
-  danger: "bg-destructive/10 text-destructive dark:bg-destructive/20",
+  danger: "bg-destructive/10 text-destructive",
   info: "bg-info-soft text-info",
   brand: "bg-secondary text-secondary-foreground",
   highlight: "bg-highlight/10 text-highlight",

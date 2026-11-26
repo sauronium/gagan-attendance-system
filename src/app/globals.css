@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark mode is class-based (next-themes adds .dark to <html>). */
+/* Light theme only. Nothing adds .dark, so the shadcn components'
+   dark: styles never apply (and don't follow the OS setting). */
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -57,52 +58,6 @@
   --sidebar-accent: #2a3d7f;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #2b3c78;
-  --sidebar-ring: #3dcbcb;
-}
-
-.dark {
-  --background: #0c1222;
-  --foreground: #e4e9f5;
-  --card: #141c31;
-  --card-foreground: #e4e9f5;
-  --popover: #141c31;
-  --popover-foreground: #e4e9f5;
-
-  --primary: #8ea6f2;
-  --primary-foreground: #0b1430;
-  --secondary: #1d2846;
-  --secondary-foreground: #d7def5;
-  --muted: #19223c;
-  --muted-foreground: #9ba5c4;
-  --accent: #123844;
-  --accent-foreground: #c8f2fa;
-  --destructive: #f07a7a;
-
-  --border: #253050;
-  --input: #2c385c;
-  --ring: #3dcbcb;
-
-  --success: #4fc58a;
-  --success-soft: #12302a;
-  --warning: #e6ac4c;
-  --warning-soft: #382a12;
-  --info: #4fd1e8;
-  --info-soft: #0f3340;
-  --brand-highlight: #ff8a3d;
-
-  --chart-1: #8ea6f2;
-  --chart-2: #3dcbcb;
-  --chart-3: #00a8c8;
-  --chart-4: #ff8a3d;
-  --chart-5: #9ba5c4;
-
-  --sidebar: #0a1020;
-  --sidebar-foreground: #c9d2ee;
-  --sidebar-primary: #3dcbcb;
-  --sidebar-primary-foreground: #0b1838;
-  --sidebar-accent: #18223f;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1c2643;
   --sidebar-ring: #3dcbcb;
 }
 
@@ -181,18 +136,11 @@
 }
 
 @layer base {
-  /* Native UI (scrollbars, form controls, first paint) follows the theme.
-     next-themes puts .light / .dark on <html>; before that, follow the OS. */
+  /* Native UI (scrollbars, form controls, first paint) is always light. */
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
     /* Minimum control size: 24px for mouse, 44px on touch screens (WCAG 2.5.8 / 2.5.5). */
     --target-size: 24px;
-  }
-  :root.light {
-    color-scheme: light;
-  }
-  :root.dark {
-    color-scheme: dark;
   }
   @media (pointer: coarse) {
     :root {
@@ -244,7 +192,7 @@
   }
 }
 
-/* Leaflet map tiles should not pick up the dark theme's colours. */
+/* Leaflet popups and controls use the app font. */
 .leaflet-container {
   font: inherit;
 }

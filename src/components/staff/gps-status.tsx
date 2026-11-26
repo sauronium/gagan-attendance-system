@@ -18,7 +18,7 @@ export function GpsStatus({ geo, className }: { geo: GeoState; className?: strin
   if (geo.status === "error") {
     icon = <MapPinOffIcon className="size-4" />;
     text = geo.error ?? "Couldn't read your location.";
-    tone = "bg-destructive/10 text-destructive dark:bg-destructive/20";
+    tone = "bg-destructive/10 text-destructive";
   } else if (geo.status === "ready" && geo.coords) {
     if (weak) {
       icon = <TriangleAlertIcon className="size-4" />;

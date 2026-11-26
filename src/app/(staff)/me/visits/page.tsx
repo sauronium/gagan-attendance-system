@@ -188,7 +188,7 @@ function VisitList({ visits, tz, showDate }: { visits: VisitRow[]; tz: string; s
           </div>
           {v.notes ? <p className="mt-2 line-clamp-3 text-sm text-foreground/90">{v.notes}</p> : null}
           {v.status === "rejected" && v.reviewRemark ? (
-            <p className="mt-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive dark:bg-destructive/20">
+            <p className="mt-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
               Rejected: {v.reviewRemark}
             </p>
           ) : null}

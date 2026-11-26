@@ -268,7 +268,7 @@ function VisitCard({ v, tz, showDate }: { v: VisitRow; tz: string; showDate: boo
             </span>
           ) : null}
           {flags.farFromSite ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive dark:bg-destructive/20">
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
               <MapPinOffIcon className="size-3" />
               Far from site{v.distanceFromSiteM != null ? ` (${formatDistance(v.distanceFromSiteM)} away)` : ""}
             </span>

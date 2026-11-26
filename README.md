@@ -11,7 +11,7 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 | Layer | Choice |
 |---|---|
 | App | Next.js 16 (App Router), React 19, TypeScript |
-| UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme, light/dark |
+| UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme (light) |
 | Data | MySQL 8, Drizzle ORM (`casing: snake_case`) |
 | Auth | Better Auth: mobile number + password (phone-number plugin) |
 | Files | Cloudflare R2, or `.data/uploads/` locally when R2 isn't configured |

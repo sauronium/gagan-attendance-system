@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Roboto, Roboto_Mono } from "next/font/google";
 
-import { ThemeProvider } from "@/components/app/theme";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { brand } from "@/lib/brand";
@@ -32,26 +31,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
+  colorScheme: "light",
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: brand.colors.navy },
-    { media: "(prefers-color-scheme: dark)", color: "#0c1222" },
-  ],
+  themeColor: brand.colors.navy,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       className={cn("h-full antialiased", roboto.variable, robotoMono.variable)}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster richColors position="top-center" />
-        </ThemeProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
