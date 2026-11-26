@@ -14,10 +14,10 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 | UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme (light) |
 | Data | MySQL 8, Drizzle ORM (`casing: snake_case`) |
 | Auth | Better Auth: mobile number or email + password (phone-number plugin + email/password) |
-| Files | Hostinger FTP or Cloudflare R2 (R2 preferred on Vercel); `.data/uploads/` locally in development |
+| Files | A folder on the server (`STORAGE_DIR`, Hostinger), Hostinger FTP or Cloudflare R2 (Vercel); `.data/uploads/` in development |
 | SMS | Built-in **demo SMS API** (messages show in an in-app inbox); live provider later |
 | Maps | Leaflet + OpenStreetMap |
-| Hosting | Vercel (see [Deploying to Vercel](#deploying-to-vercel)) or any Node host |
+| Hosting | Hostinger Node.js web app ([guide](#deploying-to-hostinger)) or Vercel ([guide](#deploying-to-vercel)) |
 
 ## Getting started
 
@@ -51,6 +51,8 @@ npx skills experimental_install
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:studio` | Browse the database |
 | `npm run db:seed` | First admin + SMS templates |
+| `npm run cron:daily` / `cron:sms` | Trigger a scheduled job against `NEXT_PUBLIC_APP_URL` (needs `CRON_SECRET`) |
+| `node scripts/cron.mjs commands <user> <domain>` | Print the Hostinger cron commands |
 
 ## Roles
 
@@ -75,7 +77,70 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/sms
 ```
 
-Both are safe to run more than once.
+`scripts/cron.mjs` (plain Node, no dependencies) does the same from a server's cron: `node scripts/cron.mjs daily|sms`, reading `CRON_SECRET` and the app URL from the environment. Both jobs are safe to run more than once.
+
+## Deploying to Hostinger
+
+The Business (and higher) web hosting plans run Next.js as a **Node.js web app**, on the same server as the MySQL database, with cron jobs in hPanel.
+
+### 1. Create the app
+
+hPanel → **Websites → Add website → Node.js app** → *Import Git repository* (redeploys on every push to the branch). Build settings:
+
+| Setting | Value |
+|---|---|
+| Framework preset | Next.js |
+| Node version | 22.x (20.x and 24.x also work; `package.json` asks for ≥ 20.9) |
+| Package manager | npm |
+| Root directory | `/` |
+| Build command | `npm run build` |
+| Start command / entry (if asked) | `npm start` (`next start`, which listens on the port Hostinger gives it) |
+
+### 2. Environment variables
+
+Add these in the deploy wizard (or later under the site's **Environment variables**, then *Apply changes*). Don't commit a `.env` file; Hostinger says it can conflict with dashboard values. Paste values without quotes.
+
+| Variable | Value |
+|---|---|
+| `DB_HOST` | `127.0.0.1` (not `localhost`, not the `srvNNNN.hstgr.io` remote host) |
+| `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `3306` and the database created in hPanel (names start with the `u123456789_` prefix) |
+| `DB_CONNECTION_LIMIT` | `5` |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
+| `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | `https://<your-domain>` |
+| `APP_TIMEZONE` | `Asia/Kolkata` |
+| `CRON_SECRET` | Random string, 16+ characters (used by the cron jobs below) |
+| `STORAGE_DIR` | Folder for photos **outside** `hbuilds/` and `public_html`, e.g. `/home/u123456789/domains/<your-domain>/uploads`. Everything under `hbuilds/` is replaced on each deploy. (Alternatively use `FTP_*` + `STORAGE_URL` or `R2_*`.) |
+| `FILES_SECRET` | Random string (defaults to `BETTER_AUTH_SECRET`) |
+| `SMS_*`, `NEXT_PUBLIC_MAP_*` | As in `.env.example` |
+
+`NEXT_PUBLIC_*` values are built into the app: after changing one, **redeploy**. Other variables are read at start-up: after changing one, **restart** the app from the site dashboard.
+
+### 3. Database
+
+Run `npm run db:migrate`, then `npm run db:seed` on a fresh database, from your own computer with the database's remote host in `.env` (hPanel → Databases → Remote MySQL must allow your IP). The deployed app itself always uses `127.0.0.1`.
+
+### 4. Cron jobs
+
+hPanel → the website → **Advanced → Cron Jobs**, one job per command. Hostinger runs Node.js cron jobs with its own Node binary and does **not** pass the app's variables, so each command loads the site's env file. Print the exact commands for your account and domain (it also checks Hostinger's 255-character limit):
+
+```bash
+node scripts/cron.mjs commands u123456789 your-domain.com
+```
+
+which prints, for example:
+
+| Schedule (UTC) | Command |
+|---|---|
+| `30 3 * * *` (09:00 IST) | `/opt/alt/alt-nodejs22/root/bin/node --env-file=/home/u123456789/domains/your-domain.com/hbuilds/config/.env /home/u123456789/domains/your-domain.com/hbuilds/current/nodejs/scripts/cron.mjs daily` |
+| `*/10 * * * *` | the same command ending in `sms` |
+
+Match the `alt-nodejs22` part to the app's Node version. If a command would be too long, use the curl form instead (it needs no env file): `curl -fsS "https://your-domain.com/api/cron/daily?key=<CRON_SECRET>"`. Cron output can be checked in hPanel; a healthy daily run prints `"ok":true`.
+
+### Limits to keep in mind
+
+- Requests are stopped after 120 seconds and cron jobs after 30 minutes. The daily job takes a few seconds.
+- Background workers and custom ports aren't supported, which is why scheduled work runs through cron.
+- `your-domain` and `www.your-domain` each run their own Node process and count toward the plan's process limit, so redirect `www` to the main domain.
 
 ## Deploying to Vercel
 

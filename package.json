@@ -2,6 +2,9 @@
   "name": "gagan-attendance-system",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,7 +16,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "cron:daily": "node scripts/cron.mjs daily",
+    "cron:sms": "node scripts/cron.mjs sms"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
