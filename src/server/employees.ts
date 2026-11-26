@@ -12,18 +12,18 @@ import {
   employeeRoles,
   employees,
   employeeStatuses,
-  leaveBalanceAdjustments,
-  leaveBalances,
-  leavePolicyTypes,
   workTypes,
 } from "@/db/schema";
 import { zf } from "@/lib/action";
 import { logAudit } from "@/lib/audit";
+import { isPlaceholderEmail } from "@/lib/login-email";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { isAdmin } from "@/lib/roles";
 import type { Viewer } from "@/lib/session";
-import { monthBounds } from "@/lib/time";
+import { env } from "@/lib/env";
+import { isoDateInTz, monthBounds } from "@/lib/time";
 import { createLogin, revokeLogin, setLoginPassword, syncLoginProfile } from "@/server/auth-admin";
+import { accrueForEmployee } from "@/server/leave-accrual";
 
 // Employee directory and lifecycle: create (with login and opening leave
 // balances), edit, status changes and login management.
@@ -41,7 +41,13 @@ export const employeeSchema = z.object({
     .min(1, "Required")
     .transform(normalizePhone)
     .refine(isValidPhone, "Enter a valid mobile number"),
-  email: z.email("Enter a valid email").max(191).optional(),
+  /** Optional second sign-in identifier (email + password). */
+  email: z
+    .email("Enter a valid email")
+    .max(191)
+    .transform((v) => v.toLowerCase())
+    .refine((v) => !isPlaceholderEmail(v), "Enter a real email address")
+    .optional(),
   role: z.enum(employeeRoles, { error: "Pick a role" }),
   departmentId: zf.optId(),
   designation: zf.optText(100),
@@ -164,48 +170,11 @@ export async function getEmployeeAttendanceSummary(employeeId: number, month: st
   return { byStatus, recent };
 }
 
-// ── Leave balances on joining ────────────────────────────────
+// ── Leave balances ───────────────────────────────────────────
 
-const floorHalf = (n: number) => Math.floor(n * 2) / 2;
-
-/**
- * This year's balances from the policy: yearly types get the full quota,
- * monthly types get quota/12 for each month left (current month included).
- */
-async function creditOpeningBalances(
-  employeeId: number,
-  policyId: number,
-  today: string,
-  actorId: number,
-) {
-  const types = await db.select().from(leavePolicyTypes).where(eq(leavePolicyTypes.policyId, policyId));
-  if (!types.length) return;
-  const year = Number(today.slice(0, 4));
-  const monthsLeft = 12 - Number(today.slice(5, 7)) + 1;
-
-  for (const t of types) {
-    const credited =
-      t.accrual === "yearly"
-        ? t.yearlyQuota
-        : t.accrual === "monthly"
-          ? floorHalf((t.yearlyQuota / 12) * monthsLeft)
-          : 0;
-    await db
-      .insert(leaveBalances)
-      .values({ employeeId, leaveTypeId: t.leaveTypeId, year, credited })
-      .onDuplicateKeyUpdate({ set: { credited } });
-    if (credited > 0) {
-      await db.insert(leaveBalanceAdjustments).values({
-        employeeId,
-        leaveTypeId: t.leaveTypeId,
-        year,
-        kind: "accrual",
-        days: credited,
-        reason: t.accrual === "monthly" ? `Opening credit for ${monthsLeft} month(s)` : "Opening credit for the year",
-        createdBy: actorId,
-      });
-    }
-  }
+/** Credit this year's leave from the policy (yearly quota, or monthly accrual so far). */
+async function creditLeave(employeeId: number, policyId: number, today: string, actorId: number) {
+  await accrueForEmployee({ id: employeeId, leavePolicyId: policyId, joinedOn: null, addedOn: today }, today, actorId);
 }
 
 // ── Mutations ────────────────────────────────────────────────
@@ -230,15 +199,21 @@ function employeeValues(input: EmployeeInput) {
 async function assertUnique(input: EmployeeInput, exceptId?: number) {
   const clash = await db.query.employees.findFirst({
     where: and(
-      or(eq(employees.empCode, input.empCode), eq(employees.mobile, input.mobile)),
+      or(
+        eq(employees.empCode, input.empCode),
+        eq(employees.mobile, input.mobile),
+        input.email ? eq(employees.email, input.email) : undefined,
+      ),
       exceptId ? ne(employees.id, exceptId) : undefined,
     ),
-    columns: { empCode: true, mobile: true },
+    columns: { empCode: true, mobile: true, email: true },
   });
-  if (clash?.empCode.toLowerCase() === input.empCode.toLowerCase()) {
+  if (!clash) return;
+  if (clash.empCode.toLowerCase() === input.empCode.toLowerCase()) {
     throw new Error(`Employee code ${input.empCode} is already used.`);
   }
-  if (clash) throw new Error("Another employee already has this mobile number.");
+  if (clash.mobile === input.mobile) throw new Error("Another employee already has this mobile number.");
+  throw new Error("Another employee already has this email.");
 }
 
 export async function createEmployee(
@@ -277,7 +252,7 @@ export async function createEmployee(
   await db.update(employees).set({ userId }).where(eq(employees.id, id));
 
   if (input.leavePolicyId) {
-    await creditOpeningBalances(id, input.leavePolicyId, today, viewer.employee.id);
+    await creditLeave(id, input.leavePolicyId, today, viewer.employee.id);
   }
   await logAudit({
     actorId: viewer.employee.id,
@@ -313,7 +288,13 @@ async function loadForChange(id: number, viewer: Viewer, newRole?: EmployeeRole)
   return existing;
 }
 
-export async function updateEmployee(id: number, input: EmployeeInput, locationIds: number[], viewer: Viewer) {
+export async function updateEmployee(
+  id: number,
+  input: EmployeeInput,
+  locationIds: number[],
+  viewer: Viewer,
+  today: string,
+) {
   const existing = await loadForChange(id, viewer, input.role);
   if (id === viewer.employee.id && input.role !== existing.role) {
     throw new Error("You can't change your own role.");
@@ -334,6 +315,21 @@ export async function updateEmployee(id: number, input: EmployeeInput, locationI
       await tx.insert(employeeLocations).values(locationIds.map((locationId) => ({ employeeId: id, locationId })));
     }
   });
+
+  // A newly assigned (or changed) policy starts crediting right away rather
+  // than waiting for the next daily job.
+  if (input.leavePolicyId && input.leavePolicyId !== existing.leavePolicyId) {
+    await accrueForEmployee(
+      {
+        id,
+        leavePolicyId: input.leavePolicyId,
+        joinedOn: input.joinedOn ?? null,
+        addedOn: isoDateInTz(existing.createdAt, env.timezone),
+      },
+      today,
+      viewer.employee.id,
+    );
+  }
 
   if (existing.userId) {
     await syncLoginProfile(existing.userId, {
@@ -389,6 +385,25 @@ export async function resetEmployeePassword(id: number, password: string, viewer
     recordId: id,
     action: "update",
     after: { passwordReset: true },
+  });
+}
+
+/**
+ * Forget the phone registered for check-ins. The next check-in, from any
+ * phone, registers that phone without a "New device" flag.
+ */
+export async function resetEmployeeDevice(id: number, viewer: Viewer) {
+  const existing = await loadForChange(id, viewer);
+  if (!existing.activeDeviceId) throw new Error("No phone is registered for this employee yet.");
+  await db.update(employees).set({ activeDeviceId: null }).where(eq(employees.id, id));
+  await logAudit({
+    actorId: viewer.employee.id,
+    tableName: "employees",
+    recordId: id,
+    action: "update",
+    before: { activeDeviceId: existing.activeDeviceId },
+    after: { activeDeviceId: null },
+    reason: "Registered phone reset",
   });
 }
 

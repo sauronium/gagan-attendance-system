@@ -62,7 +62,7 @@ export function CorrectionDialog({
         <form action={action} className="flex flex-col gap-3">
           <DialogHeader>
             <DialogTitle>Request correction</DialogTitle>
-            <DialogDescription>{dateLabel} · your manager will review it.</DialogDescription>
+            <DialogDescription>{dateLabel} · an admin will review it.</DialogDescription>
           </DialogHeader>
           <input type="hidden" name="date" value={date} />
           <FormField label="What needs fixing?" htmlFor={id("type")} error={fe.type} required>

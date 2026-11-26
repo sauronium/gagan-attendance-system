@@ -143,16 +143,33 @@ export async function processDueSms(limit = 200): Promise<number> {
     where: and(eq(smsMessages.status, "queued"), lte(smsMessages.scheduledAt, new Date())),
     limit,
   });
+  let sent = 0;
   for (const msg of due) {
+    // Claim the row first so two overlapping runs (daily job + the frequent
+    // SMS job) never send the same message twice.
+    const [claim] = await db
+      .update(smsMessages)
+      .set({ status: "sent" })
+      .where(and(eq(smsMessages.id, msg.id), eq(smsMessages.status, "queued")));
+    if (claim.affectedRows !== 1) continue;
     const result = await deliver(msg.phone, msg.body);
     await markResult(msg.id, result, msg.attempts + 1);
+    sent++;
   }
-  return due.length;
+  return sent;
 }
 
-/** Fill {{placeholders}} in a template body. Unknown ones are left visible. */
+const toCamel = (k: string) => k.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+const toSnake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+
+/**
+ * Fill {{placeholders}} in a template body. {{contractNo}} and {{contract_no}}
+ * are treated as the same name, so edited templates work with either style.
+ * Unknown placeholders are left visible.
+ */
 export function renderTemplate(body: string, vars: Record<string, string | number>) {
-  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key: string) =>
-    key in vars ? String(vars[key]) : m,
-  );
+  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key: string) => {
+    for (const k of [key, toCamel(key), toSnake(key)]) if (k in vars) return String(vars[k]);
+    return m;
+  });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2Icon } from "lucide-react";
-import { type ComponentProps, type ReactNode, useEffect, useRef } from "react";
+import { type ComponentProps, type ReactNode, useCallback, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 
@@ -79,16 +79,40 @@ export function FormError({ state }: { state: ActionState }) {
  * Shows a toast when an action finishes and optionally runs a callback on
  * success (close a dialog, reset a form…).
  */
-export function useActionToast(state: ActionState, onSuccess?: () => void) {
+export function useActionToast(state: ActionState, onSuccess?: () => void, opts?: { silent?: boolean }) {
   const last = useRef<ActionState | null>(null);
+  const silent = opts?.silent ?? false;
   useEffect(() => {
     if (state === last.current) return;
     last.current = state;
     if (state.ok) {
-      if (state.message) toast.success(state.message);
+      if (state.message && !silent) toast.success(state.message);
       onSuccess?.();
-    } else if (state.error && !state.fieldErrors) {
+    } else if (state.error && !state.fieldErrors && !silent) {
       toast.error(state.error);
     }
-  }, [state, onSuccess]);
+  }, [state, onSuccess, silent]);
+}
+
+type ServerAction = (prev: ActionState, fd: FormData) => Promise<ActionState>;
+
+/**
+ * Wraps a server action so its toast is shown as soon as the result arrives.
+ * Use with `useActionToast(state, onSuccess, { silent: true })` for buttons
+ * that disappear after a successful action (Approve, Verify, Mark paid…):
+ * the refreshed page unmounts them before an effect could show the toast.
+ */
+export function useToastedAction(action: ServerAction): ServerAction {
+  return useCallback(
+    async (prev: ActionState, fd: FormData) => {
+      const res = await action(prev, fd);
+      if (res.ok) {
+        if (res.message) toast.success(res.message);
+      } else if (res.error && !res.fieldErrors) {
+        toast.error(res.error);
+      }
+      return res;
+    },
+    [action],
+  );
 }

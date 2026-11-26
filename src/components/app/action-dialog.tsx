@@ -2,7 +2,7 @@
 
 import { type ReactElement, type ReactNode, useActionState, useCallback, useState } from "react";
 
-import { FormError, SubmitButton, useActionToast } from "@/components/app/form-bits";
+import { FormError, SubmitButton, useActionToast, useToastedAction } from "@/components/app/form-bits";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +31,7 @@ export function ActionDialog({
   description,
   hidden,
   remark,
+  remarkPlaceholder = "Reason shown to the employee",
   confirmLabel = "Confirm",
   destructive,
   children,
@@ -44,14 +45,16 @@ export function ActionDialog({
   hidden?: Record<string, string | number>;
   /** Show a remark textarea; "required" makes it mandatory. */
   remark?: "optional" | "required";
+  /** Placeholder for the remark box (default: shown to the employee). */
+  remarkPlaceholder?: string;
   confirmLabel?: string;
   destructive?: boolean;
   children?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useActionState(action, initialActionState);
+  const [state, formAction] = useActionState(useToastedAction(action), initialActionState);
   const close = useCallback(() => setOpen(false), []);
-  useActionToast(state, close);
+  useActionToast(state, close, { silent: true });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -79,7 +82,7 @@ export function ActionDialog({
                 rows={3}
                 required={remark === "required"}
                 maxLength={255}
-                placeholder="Reason shown to the employee"
+                placeholder={remarkPlaceholder}
               />
             </div>
           ) : null}
@@ -117,8 +120,8 @@ export function ActionButton({
   size?: "sm" | "default" | "xs";
   pendingLabel?: string;
 }) {
-  const [state, formAction] = useActionState(action, initialActionState);
-  useActionToast(state);
+  const [state, formAction] = useActionState(useToastedAction(action), initialActionState);
+  useActionToast(state, undefined, { silent: true });
   return (
     <form action={formAction} className="inline-flex">
       {Object.entries(hidden).map(([k, v]) => (

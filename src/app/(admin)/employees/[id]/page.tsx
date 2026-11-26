@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, KeyRoundIcon, UserCogIcon } from "lucide-react";
+import { ArrowLeftIcon, KeyRoundIcon, SmartphoneIcon, UserCogIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,7 +22,7 @@ import { isFlagged } from "@/server/attendance-admin";
 import { canManage, getEmployee, getEmployeeAttendanceSummary } from "@/server/employees";
 import { getBalances } from "@/server/leave";
 
-import { changeStatusAction, createLoginAction, resetPasswordAction, updateEmployeeAction } from "../actions";
+import { changeStatusAction, createLoginAction, resetDeviceAction, resetPasswordAction, updateEmployeeAction } from "../actions";
 import { EmployeeForm } from "../employee-form";
 import { employeeFormOptions } from "../form-options";
 
@@ -108,6 +108,21 @@ export default async function EmployeePage({ params }: { params: Params }) {
               >
                 <PasswordField id={`pw-new-${id}`} />
               </ActionDialog>
+            ) : null}
+            {editable && emp.activeDeviceId ? (
+              <ActionDialog
+                action={resetDeviceAction}
+                hidden={{ id }}
+                title={`Reset ${emp.name}'s phone?`}
+                description="Use this when they change or lose their phone. The next check-in, from any phone, becomes their registered phone and won't be flagged as a new device."
+                confirmLabel="Reset phone"
+                trigger={
+                  <Button variant="outline">
+                    <SmartphoneIcon />
+                    Reset phone
+                  </Button>
+                }
+              />
             ) : null}
             {editable && !isSelf ? (
               <ActionDialog

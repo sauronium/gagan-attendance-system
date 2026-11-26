@@ -1,10 +1,20 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { ArrowLeftIcon, BellRingIcon, FactoryIcon, FileCheck2Icon, HistoryIcon, MapPinIcon, PhoneIcon } from "lucide-react";
+import { ArrowLeftIcon, BellRingIcon, FactoryIcon, FileCheck2Icon, HistoryIcon, MapPinIcon, PhoneIcon, Trash2Icon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AddContactDialog, AddInstallationDialog, AddSiteDialog, EditClientDialog } from "@/components/clients/client-forms";
+import { deleteContactAction, deleteSiteAction } from "@/app/(admin)/clients/actions";
+import { ActionDialog } from "@/components/app/action-dialog";
+import {
+  AddContactDialog,
+  AddInstallationDialog,
+  AddSiteDialog,
+  EditClientDialog,
+  EditContactDialog,
+  EditInstallationDialog,
+  EditSiteDialog,
+} from "@/components/clients/client-forms";
 import { NewComplaintDialog } from "@/components/clients/complaint-dialog";
 import { ComplaintsTable } from "@/components/clients/complaints-table";
 import { AddContractDialog } from "@/components/clients/contract-dialog";
@@ -16,7 +26,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkTabs } from "@/components/app/link-tabs";
 import { PageHeader, SectionTitle } from "@/components/app/page-header";
 import { badgeFrom, StatusBadge } from "@/components/app/status-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { db } from "@/db";
@@ -168,6 +178,31 @@ function Overview({ client }: { client: ClientDetail }) {
                 </a>
                 {c.altPhone ? <span className="text-xs text-muted-foreground tabular-nums">{formatPhone(c.altPhone)}</span> : null}
                 <StatusBadge label={c.smsOptIn ? "SMS on" : "SMS off"} tone={c.smsOptIn ? "success" : "neutral"} />
+                <div className="flex gap-0.5">
+                  <EditContactDialog
+                    clientId={client.id}
+                    contactId={c.id}
+                    isPrimary={c.isPrimary}
+                    defaults={{ name: c.name, designation: c.designation, phone: c.phone, altPhone: c.altPhone, email: c.email, smsOptIn: c.smsOptIn }}
+                  />
+                  <ActionDialog
+                    action={deleteContactAction}
+                    hidden={{ clientId: client.id, id: c.id }}
+                    title={`Remove ${c.name}?`}
+                    description={
+                      c.isPrimary && client.contacts.length > 1
+                        ? "This is the primary contact; the next contact becomes primary. Past SMS keep their text and number."
+                        : "Past SMS keep their text and number."
+                    }
+                    confirmLabel="Remove contact"
+                    destructive
+                    trigger={
+                      <Button size="icon-sm" variant="ghost" aria-label={`Remove contact ${c.name}`}>
+                        <Trash2Icon />
+                      </Button>
+                    }
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -194,18 +229,42 @@ function Overview({ client }: { client: ClientDetail }) {
                   {s.state ? ` · ${s.state}` : ""}
                 </div>
               </div>
-              {s.lat != null && s.lng != null ? (
-                <a
-                  href={`https://www.google.com/maps?q=${s.lat},${s.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  <MapPinIcon className="size-3.5" aria-hidden /> Map
-                </a>
-              ) : (
-                <span className="shrink-0 text-xs text-muted-foreground">No pin</span>
-              )}
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {s.lat != null && s.lng != null ? (
+                  <a
+                    href={`https://www.google.com/maps?q=${s.lat},${s.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <MapPinIcon className="size-3.5" aria-hidden /> Map
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No pin</span>
+                )}
+                <div className="flex gap-0.5">
+                  <EditSiteDialog
+                    clientId={client.id}
+                    siteId={s.id}
+                    defaults={{ label: s.label, addressLine: s.addressLine, area: s.area, city: s.city, state: s.state, pincode: s.pincode, lat: s.lat, lng: s.lng }}
+                  />
+                  {s.installations.length === 0 ? (
+                    <ActionDialog
+                      action={deleteSiteAction}
+                      hidden={{ clientId: client.id, id: s.id }}
+                      title="Remove this site?"
+                      description={`${siteAddress(s)}. Field visits logged here keep their location and notes.`}
+                      confirmLabel="Remove site"
+                      destructive
+                      trigger={
+                        <Button size="icon-sm" variant="ghost" aria-label="Remove site">
+                          <Trash2Icon />
+                        </Button>
+                      }
+                    />
+                  ) : null}
+                </div>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -268,6 +327,9 @@ function Plants({ client, today }: { client: ClientDetail; today: string }) {
                       <TableHead className="hidden md:table-cell">Installed</TableHead>
                       <TableHead>Warranty</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="w-10">
+                        <span className="sr-only">Edit</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -287,6 +349,24 @@ function Plants({ client, today }: { client: ClientDetail; today: string }) {
                           </TableCell>
                           <TableCell>
                             <StatusBadge label={i.status === "active" ? "Active" : "Removed"} tone={i.status === "active" ? "success" : "neutral"} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <EditInstallationDialog
+                              clientId={client.id}
+                              installationId={i.id}
+                              sites={siteOptions}
+                              defaults={{
+                                siteId: s.id,
+                                plantType: i.plantType,
+                                capacityLph: i.capacityLph,
+                                model: i.model,
+                                serialNo: i.serialNo,
+                                membraneSpec: i.membraneSpec,
+                                installedOn: i.installedOn,
+                                warrantyUntil: i.warrantyUntil,
+                                status: i.status,
+                              }}
+                            />
                           </TableCell>
                         </TableRow>
                       );

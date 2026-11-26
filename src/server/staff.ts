@@ -354,7 +354,9 @@ export async function getAssignedJobs(technicianId: number, until: string) {
   return db.query.serviceVisits.findMany({
     where: and(
       eq(serviceVisits.technicianId, technicianId),
-      inArray(serviceVisits.status, ["scheduled", "rescheduled"]),
+      // "rescheduled" rows are the replaced originals; the new date has its
+      // own scheduled row, so only scheduled visits are jobs.
+      eq(serviceVisits.status, "scheduled"),
       lte(serviceVisits.dueOn, until),
     ),
     orderBy: [asc(serviceVisits.dueOn)],
@@ -392,8 +394,12 @@ export async function completeServiceVisit(
     },
   });
   if (!visit) throw new Error("Job not found or not assigned to you.");
-  if (visit.status !== "scheduled" && visit.status !== "rescheduled") {
-    throw new Error(`This job is already ${visit.status}.`);
+  if (visit.status !== "scheduled") {
+    throw new Error(
+      visit.status === "rescheduled"
+        ? "This visit was moved to a new date. Open the new job instead."
+        : `This job is already ${visit.status}.`,
+    );
   }
 
   const now = new Date();

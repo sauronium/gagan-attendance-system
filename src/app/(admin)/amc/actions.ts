@@ -8,7 +8,15 @@ import { type ActionState, actionError, formToObject, zf } from "@/lib/action";
 import { ADMIN_ROLES } from "@/lib/roles";
 import { assertViewer } from "@/lib/session";
 import { formatDate } from "@/lib/time";
-import { assignTechnician, createContract, markServiceVisit, renewContract } from "@/server/amc";
+import {
+  assignTechnician,
+  cancelContract,
+  createContract,
+  markServiceVisit,
+  recordContractPayment,
+  renewContract,
+} from "@/server/amc";
+import { formatInr } from "@/components/clients/format";
 
 function refresh() {
   revalidatePath("/amc");
@@ -70,6 +78,38 @@ export async function renewContractAction(_: ActionState, fd: FormData): Promise
     await renewContract(id, viewer.employee.id);
     refresh();
     return { ok: true, message: "Contract renewed and new service visits scheduled." };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function recordPaymentAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const d = z
+      .object({ id: zf.id(), amount: money().refine((n) => n > 0, "Enter the amount received"), remark: zf.optText(255) })
+      .parse(formToObject(fd));
+    const res = await recordContractPayment(d.id, { amount: d.amount, remark: d.remark }, viewer.employee.id);
+    refresh();
+    return {
+      ok: true,
+      message: res.due > 0 ? `${formatInr(d.amount)} recorded. ${formatInr(res.due)} still due.` : `${formatInr(d.amount)} recorded. Contract fully paid.`,
+    };
+  } catch (e) {
+    return actionError(e);
+  }
+}
+
+export async function cancelContractAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const viewer = await assertViewer(ADMIN_ROLES);
+    const d = z.object({ id: zf.id(), remark: zf.text(255) }).parse(formToObject(fd));
+    const res = await cancelContract(d.id, d.remark, viewer.employee.id);
+    refresh();
+    return {
+      ok: true,
+      message: `Contract cancelled.${res.cancelledVisits ? ` ${res.cancelledVisits} upcoming visit${res.cancelledVisits === 1 ? "" : "s"} cancelled.` : ""}`,
+    };
   } catch (e) {
     return actionError(e);
   }
