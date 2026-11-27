@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@next/env": "^16.4.6",
-    "@tailwindcss/turbopack": "4.3.3",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/react": "^19",

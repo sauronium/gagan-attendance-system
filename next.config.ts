@@ -5,14 +5,11 @@ const nextConfig: NextConfig = {
   // login and shows per-user, live data, so pages render on each request.
   // Turning it on would require a <Suspense> boundary around every cookie,
   // session and database read.
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  //
+  // Production builds use webpack (`next build --webpack`): Turbopack runs
+  // CSS processing in helper Node processes, which Hostinger's build servers
+  // don't allow. Tailwind is wired through postcss.config.mjs for both.
+  //
   // Privacy and safety headers. Camera and location are allowed for this
   // site only (check-in selfies, visit photos, location tags); powerful
   // features the app never uses are switched off.
