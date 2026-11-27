@@ -30,6 +30,13 @@ export const env = {
     })(),
   },
 
+  /**
+   * Absolute folder for uploaded files on the app's own server (Hostinger
+   * Node.js hosting). Must be outside the deploy folder (hbuilds/), which is
+   * replaced on every deploy, and outside public_html.
+   */
+  storageDir: str(process.env.STORAGE_DIR).replace(/[\\/]+$/, ""),
+
   /** Secret used to make stored file names unguessable. */
   filesSecret: str(process.env.FILES_SECRET, str(process.env.BETTER_AUTH_SECRET, "dev-files-secret")),
 

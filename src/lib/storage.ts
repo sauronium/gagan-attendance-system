@@ -12,17 +12,23 @@ import { env, ftpConfigured, r2Configured } from "@/lib/env";
 
 // File storage for check-in selfies, visit photos and documents.
 // Backends, in order of preference:
-// 1. Hostinger FTP (FTP_* + STORAGE_URL): upload over FTPS into the site's
+// 1. STORAGE_DIR: a folder on the app's own server. Used when the app runs on
+//    Hostinger Node.js hosting; it must sit outside hbuilds/ (replaced on every
+//    deploy) and outside public_html.
+// 2. Hostinger FTP (FTP_* + STORAGE_URL): upload over FTPS into the site's
 //    web root, read back over HTTPS from STORAGE_URL.
-// 2. Cloudflare R2 (R2_*).
-// 3. Local disk under .data/uploads/ (development fallback).
+// 3. Cloudflare R2 (R2_*).
+// 4. Local disk under .data/uploads/ (development only).
+// On Vercel (read-only disk) STORAGE_DIR is ignored and R2 is preferred over
+// FTP: it is plain HTTPS, while FTP opens a new connection for every upload.
 //
 // The app never links to a storage URL directly: browsers always go through
 // /api/files/<key>, which checks the viewer's permission first. Because the
 // FTP folder is publicly served, each file's real name gets an HMAC prefix
 // derived from FILES_SECRET, so its public URL can't be guessed from the key.
 
-const LOCAL_ROOT = path.join(process.cwd(), ".data", "uploads");
+const DEV_ROOT = path.join(process.cwd(), ".data", "uploads");
+const localRoot = () => (env.storageDir && !process.env.VERCEL ? env.storageDir : DEV_ROOT);
 const FTP_FOLDER = "uploads"; // inside FTP_BASE_DIR / STORAGE_URL
 
 const contentTypes: Record<string, string> = {
@@ -115,11 +121,31 @@ const r2Url = (key: string) =>
 
 // ── Public API ───────────────────────────────────────────────
 
+type Backend = "ftp" | "r2" | "local";
+
+function backend(): Backend {
+  const vercel = Boolean(process.env.VERCEL);
+  if (vercel && r2Configured()) return "r2";
+  if (!vercel && env.storageDir) return "local";
+  if (ftpConfigured()) return "ftp";
+  if (r2Configured()) return "r2";
+  if (vercel) {
+    throw new Error("File storage is not configured. Set the R2_* (or FTP_* and STORAGE_URL) environment variables in Vercel.");
+  }
+  // Hostinger replaces the deploy folder (…/hbuilds/…) on every deploy, so
+  // photos saved inside it would disappear.
+  if (/[\\/]hbuilds[\\/]/.test(process.cwd())) {
+    throw new Error("File storage is not configured. Set STORAGE_DIR (a folder outside hbuilds/ and public_html) or the FTP_* variables.");
+  }
+  return "local";
+}
+
 export async function putFile(key: string, data: Uint8Array, contentType: string): Promise<string> {
   const k = safeKey(key);
-  if (ftpConfigured()) {
+  const where = backend();
+  if (where === "ftp") {
     await ftpPut(k, data);
-  } else if (r2Configured()) {
+  } else if (where === "r2") {
     const res = await r2().fetch(r2Url(k), {
       method: "PUT",
       body: data as BodyInit,
@@ -127,7 +153,7 @@ export async function putFile(key: string, data: Uint8Array, contentType: string
     });
     if (!res.ok) throw new Error(`Upload failed (${res.status})`);
   } else {
-    const file = path.join(LOCAL_ROOT, k);
+    const file = path.join(localRoot(), k);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, data);
   }
@@ -137,11 +163,12 @@ export async function putFile(key: string, data: Uint8Array, contentType: string
 export async function getFile(key: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   const k = safeKey(key);
   const contentType = typeOf(k);
-  if (ftpConfigured()) {
+  const where = backend();
+  if (where === "ftp") {
     const data = await ftpGet(k);
     return data ? { data, contentType } : null;
   }
-  if (r2Configured()) {
+  if (where === "r2") {
     const res = await r2().fetch(r2Url(k));
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
@@ -151,7 +178,7 @@ export async function getFile(key: string): Promise<{ data: Uint8Array; contentT
     };
   }
   try {
-    return { data: await readFile(path.join(LOCAL_ROOT, k)), contentType };
+    return { data: await readFile(path.join(localRoot(), k)), contentType };
   } catch {
     return null;
   }

@@ -14,9 +14,10 @@ Spec: [`docs/project-doc.html`](docs/project-doc.html).
 | UI | Tailwind CSS v4, shadcn/ui (Base UI), Agam brand theme (light) |
 | Data | MySQL 8, Drizzle ORM (`casing: snake_case`) |
 | Auth | Better Auth: mobile number or email + password (phone-number plugin + email/password) |
-| Files | Cloudflare R2, or `.data/uploads/` locally when R2 isn't configured |
+| Files | A folder on the server (`STORAGE_DIR`, Hostinger), Hostinger FTP or Cloudflare R2 (Vercel); `.data/uploads/` in development |
 | SMS | Built-in **demo SMS API** (messages show in an in-app inbox); live provider later |
 | Maps | Leaflet + OpenStreetMap |
+| Hosting | Hostinger Node.js web app ([guide](#deploying-to-hostinger)) or Vercel ([guide](#deploying-to-vercel)) |
 
 ## Getting started
 
@@ -50,6 +51,8 @@ npx skills experimental_install
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:studio` | Browse the database |
 | `npm run db:seed` | First admin + SMS templates |
+| `npm run cron:daily` / `cron:sms` | Trigger a scheduled job against `NEXT_PUBLIC_APP_URL` (needs `CRON_SECRET`) |
+| `node scripts/cron.mjs commands <user> <domain>` | Print the Hostinger cron commands |
 
 ## Roles
 
@@ -74,9 +77,102 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron
 curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/sms
 ```
 
-Both are safe to run more than once.
+`scripts/cron.mjs` (plain Node, no dependencies) does the same from a server's cron: `node scripts/cron.mjs daily|sms`, reading `CRON_SECRET` and the app URL from the environment. Both jobs are safe to run more than once.
 
-## SMS
+## Deploying to Hostinger
+
+The Business (and higher) web hosting plans run Next.js as a **Node.js web app**, on the same server as the MySQL database, with cron jobs in hPanel. The current setup uses two websites on one account:
+
+- **App site** (e.g. `free-rosybrown-dragonfly-35.hostingersite.com`): the Node.js app.
+- **Data site** (e.g. `hushed-white-lobster-79.hostingersite.com`): owns the MySQL database, and its `public_html/uploads` holds photos (FTP storage). App deploys never touch it.
+
+### 1. Build settings
+
+| Setting | Value |
+|---|---|
+| Framework preset | Next.js |
+| Node version | 22.x (`package.json` asks for ≥ 20.9) |
+| Package manager | npm |
+| Root directory | `.` |
+| Build script | `build` (runs `next build --webpack`; Turbopack's CSS workers can't run on Hostinger's build servers) |
+| Output directory | `.next` (Hostinger detects the standalone server output and runs it) |
+
+### 2. Configuration: a `.env` file in the upload, not dashboard variables
+
+The app reads its settings from a `.env` file shipped with the source. Next.js uses it at build time (`NEXT_PUBLIC_*`) and copies it into the server bundle (`hbuilds/current/nodejs/.env`), where the app and the cron script read it. Leave the site's **Environment variables** in hPanel empty so the two never conflict.
+
+Start from your local `.env` and change:
+
+| Variable | Value on the app site |
+|---|---|
+| `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` | `https://<app-domain>` |
+| `DB_HOST` | `127.0.0.1` (same server; not `localhost`, not the `srvNNNN.hstgr.io` remote host) |
+| `SEED_*` | remove (only for `npm run db:seed` on your computer) |
+| Storage | keep `FTP_*` + `STORAGE_URL` pointing at the data site, or use `STORAGE_DIR` (a folder outside `hbuilds/` and `public_html`) |
+
+Any change to the file means building a new archive and redeploying.
+
+### 3. Deploy over FTP (no Git)
+
+1. Make an archive of the committed source plus the production `.env` (leave out `node_modules`, `.next` and `docs/`):
+   `git archive --format=tar.gz -o deploy.tar.gz HEAD -- . ':!docs'`, then add `.env` to it.
+2. Upload it over FTP into `domains/<app-domain>/public_html/_deploy/`, together with an `.htaccess` containing `Require all denied` so the archive (it contains secrets) can't be downloaded while it waits.
+3. Start the build from the archive (hPanel → the app site → *Deployments*, or the Hostinger API `Start Node.js build` with `source_type: archive`, `archive_path: _deploy/deploy.tar.gz`, the settings above).
+4. When the build log ends with *Application restarted*, the site is live. Publishing also clears `public_html`, which removes the archive.
+
+### 4. Database
+
+Run `npm run db:migrate`, then `npm run db:seed` on a fresh database, from your own computer with the database's remote host in your local `.env` (hPanel → Databases → Remote MySQL must allow your IP). The deployed app always uses `127.0.0.1`.
+
+### 5. Cron jobs
+
+hPanel → the **app site** → **Advanced → Cron Jobs**, one job per command. `scripts/cron.mjs` is shipped inside the server bundle and reads `CRON_SECRET` and the app URL from the bundle's `.env`, so the commands need no env flags. Print them for your account and domain (it also checks Hostinger's 255-character limit):
+
+```bash
+node scripts/cron.mjs commands u123456789 your-app-domain.com
+```
+
+| Schedule (UTC) | Command |
+|---|---|
+| `30 3 * * *` (09:00 IST) | `/opt/alt/alt-nodejs22/root/bin/node /home/u123456789/domains/your-app-domain.com/hbuilds/current/nodejs/scripts/cron.mjs daily` |
+| `*/10 * * * *` | the same command ending in `sms` |
+
+Match `alt-nodejs22` to the app's Node version. Alternative that needs no files at all: `curl -fsS "https://your-app-domain.com/api/cron/daily?key=<CRON_SECRET>"`. Cron output can be checked in hPanel; a healthy run prints `"ok":true`.
+
+### Limits to keep in mind
+
+- Requests are stopped after 120 seconds and cron jobs after 30 minutes. The daily job takes a few seconds.
+- Background workers and custom ports aren't supported, which is why scheduled work runs through cron.
+- `your-domain` and `www.your-domain` each run their own Node process and count toward the plan's process limit, so redirect `www` to the main domain.
+
+## Deploying to Vercel
+
+`vercel.json` pins the functions to Mumbai (`bom1`, close to the Hostinger database and to staff) and schedules the daily job at 09:00 IST.
+
+1. **Database access.** Vercel has no fixed IP addresses, so in Hostinger hPanel → *Databases → Remote MySQL*, allow connections from any host (`%`) for the app's database user, and use the server's IP or `srvNNNN.hstgr.io` host as `DB_HOST`. Run `npm run db:migrate` (and `npm run db:seed` on a fresh database) from your own computer.
+2. **File storage.** Vercel's disk is read-only, so photos need R2 or FTP. R2 is recommended (`R2_*`); Hostinger FTP (`FTP_*` + `STORAGE_URL`) also works. Pick one and keep it: photos saved to one aren't visible through the other. If both are set, Vercel uses R2.
+3. **Import the repository** in Vercel (framework: Next.js, default build settings).
+4. **Environment variables** (Project → Settings → Environment Variables), for Production and Preview:
+
+   | Variable | Value |
+   |---|---|
+   | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Hostinger database |
+   | `DB_CONNECTION_LIMIT` | `3` (per function instance; Hostinger also caps new connections per hour) |
+   | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
+   | `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | Production URL, e.g. `https://ops.agamwater.in` (or the `*.vercel.app` one). Preview deployments work without changes. |
+   | `CRON_SECRET` | Random string, 16+ characters. Vercel sends it automatically to the cron job. |
+   | `APP_TIMEZONE` | `Asia/Kolkata` |
+   | `R2_*` or `FTP_*` + `STORAGE_URL` + `FILES_SECRET` | File storage (step 2) |
+   | `SMS_*`, `NEXT_PUBLIC_MAP_*` | As in `.env.example` |
+
+   Do not set the `SEED_*` values in Vercel; they are only for `npm run db:seed` on your computer.
+5. **Deploy**, then sign in with the Super Admin account.
+
+**Scheduled SMS.** The daily job (in `vercel.json`) runs on every Vercel plan. Messages scheduled from **Messages → Compose** also need `/api/cron/sms` every 5–15 minutes:
+
+- On the **Pro** plan, add it to `vercel.json`: `{ "path": "/api/cron/sms", "schedule": "*/10 * * * *" }`. The Hobby plan only allows daily crons, and a deployment with a more frequent schedule fails.
+- On **Hobby**, use any external scheduler (e.g. cron-job.org) to call `https://<your-domain>/api/cron/sms?key=<CRON_SECRET>` every 10 minutes. Without it, scheduled messages go out with the next morning's daily job.
+
 
 `SMS_PROVIDER=demo` (the default) never contacts a phone network. Every message is stored and shown under **Messages → Inbox**, and `SMS_DEMO_FAILURE_RATE` simulates failures. To go live, choose a provider, register DLT templates, set `SMS_PROVIDER=live` with `SMS_API_URL`/`SMS_API_KEY`, and adapt `deliverLive()` in `src/lib/sms.ts` to that provider's API.
 

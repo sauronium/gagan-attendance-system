@@ -10,6 +10,8 @@ import { processDueSms } from "@/lib/sms";
 // Safe to overlap with the daily job: each message is claimed before sending.
 
 export const dynamic = "force-dynamic";
+// Seconds the job may run (Vercel function limit).
+export const maxDuration = 120;
 
 async function handle(request: NextRequest) {
   if (!cronAuthorised(request)) {

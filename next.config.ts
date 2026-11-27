@@ -5,14 +5,11 @@ const nextConfig: NextConfig = {
   // login and shows per-user, live data, so pages render on each request.
   // Turning it on would require a <Suspense> boundary around every cookie,
   // session and database read.
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  //
+  // Production builds use webpack (`next build --webpack`): Turbopack runs
+  // CSS processing in helper Node processes, which Hostinger's build servers
+  // don't allow. Tailwind is wired through postcss.config.mjs for both.
+  //
   // Privacy and safety headers. Camera and location are allowed for this
   // site only (check-in selfies, visit photos, location tags); powerful
   // features the app never uses are switched off.
@@ -28,9 +25,25 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
+          // Private app: no indexing, archiving or snippets of any response
+          // (pages, API JSON, photos), whatever links to it.
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet, noimageindex" },
         ],
       },
     ];
+  },
+  // Ship scripts/cron.mjs with the server bundle: Hostinger runs the
+  // standalone output, and its cron jobs call this script from there.
+  outputFileTracingIncludes: {
+    "/api/cron/*": ["./scripts/cron.mjs"],
+  },
+  experimental: {
+    serverActions: {
+      // Check-in and visit photos are sent to server actions as data URLs
+      // (downscaled to ~720 px, normally well under 1 MB). Allow headroom while
+      // staying below Vercel's 4.5 MB request limit.
+      bodySizeLimit: "3mb",
+    },
   },
   images: {
     // Check-in and visit photos are served by our own /api/files route.

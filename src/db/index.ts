@@ -1,5 +1,6 @@
 import "server-only";
 
+import { attachDatabasePool } from "@vercel/functions";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 
@@ -12,6 +13,11 @@ import * as schema from "./schema";
 // Hostinger, which limits concurrent MySQL connections).
 const globalForDb = globalThis as unknown as { mysqlPool?: mysql.Pool };
 
+// On Vercel every function instance has its own pool, and Hostinger caps
+// both concurrent connections and new connections per hour, so keep each
+// instance's pool small there.
+const onVercel = Boolean(process.env.VERCEL);
+
 const pool =
   globalForDb.mysqlPool ??
   mysql.createPool({
@@ -20,7 +26,7 @@ const pool =
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || (onVercel ? 3 : 10),
     waitForConnections: true,
     // Shared hosting closes idle connections quickly: keep them alive and
     // retire idle ones ourselves so requests never pick up a dead socket.
@@ -37,6 +43,11 @@ const pool =
 if (process.env.NODE_ENV !== "production") {
   globalForDb.mysqlPool = pool;
 }
+
+// Vercel (Fluid compute) suspends idle function instances. This keeps an
+// instance alive just long enough for its idle connections to close cleanly,
+// so suspended instances don't leave connections open on Hostinger.
+if (onVercel) attachDatabasePool(pool);
 
 // `casing` must match drizzle.config.ts so query column names line up
 // with the migrations.
