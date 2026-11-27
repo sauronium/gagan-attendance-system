@@ -28,6 +28,16 @@ export const metadata: Metadata = {
   description: `${brand.tagline} for ${brand.company}.`,
   applicationName: brand.appName,
   appleWebApp: { title: brand.shortName, capable: true },
+  // Private app: keep every page out of search engines, caches and previews.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+  },
 };
 
 export const viewport: Viewport = {
