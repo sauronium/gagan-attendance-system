@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Ship scripts/cron.mjs with the server bundle: Hostinger runs the
+  // standalone output, and its cron jobs call this script from there.
+  outputFileTracingIncludes: {
+    "/api/cron/*": ["./scripts/cron.mjs"],
+  },
   experimental: {
     serverActions: {
       // Check-in and visit photos are sent to server actions as data URLs

@@ -81,60 +81,63 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron
 
 ## Deploying to Hostinger
 
-The Business (and higher) web hosting plans run Next.js as a **Node.js web app**, on the same server as the MySQL database, with cron jobs in hPanel.
+The Business (and higher) web hosting plans run Next.js as a **Node.js web app**, on the same server as the MySQL database, with cron jobs in hPanel. The current setup uses two websites on one account:
 
-### 1. Create the app
+- **App site** (e.g. `free-rosybrown-dragonfly-35.hostingersite.com`): the Node.js app.
+- **Data site** (e.g. `hushed-white-lobster-79.hostingersite.com`): owns the MySQL database, and its `public_html/uploads` holds photos (FTP storage). App deploys never touch it.
 
-hPanel → **Websites → Add website → Node.js app** → *Import Git repository* (redeploys on every push to the branch). Build settings:
+### 1. Build settings
 
 | Setting | Value |
 |---|---|
 | Framework preset | Next.js |
-| Node version | 22.x (20.x and 24.x also work; `package.json` asks for ≥ 20.9) |
+| Node version | 22.x (`package.json` asks for ≥ 20.9) |
 | Package manager | npm |
-| Root directory | `/` |
-| Build command | `npm run build` |
-| Start command / entry (if asked) | `npm start` (`next start`, which listens on the port Hostinger gives it) |
+| Root directory | `.` |
+| Build script | `build` (runs `next build --webpack`; Turbopack's CSS workers can't run on Hostinger's build servers) |
+| Output directory | `.next` (Hostinger detects the standalone server output and runs it) |
 
-### 2. Environment variables
+### 2. Configuration: a `.env` file in the upload, not dashboard variables
 
-Add these in the deploy wizard (or later under the site's **Environment variables**, then *Apply changes*). Don't commit a `.env` file; Hostinger says it can conflict with dashboard values. Paste values without quotes.
+The app reads its settings from a `.env` file shipped with the source. Next.js uses it at build time (`NEXT_PUBLIC_*`) and copies it into the server bundle (`hbuilds/current/nodejs/.env`), where the app and the cron script read it. Leave the site's **Environment variables** in hPanel empty so the two never conflict.
 
-| Variable | Value |
+Start from your local `.env` and change:
+
+| Variable | Value on the app site |
 |---|---|
-| `DB_HOST` | `127.0.0.1` (not `localhost`, not the `srvNNNN.hstgr.io` remote host) |
-| `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `3306` and the database created in hPanel (names start with the `u123456789_` prefix) |
-| `DB_CONNECTION_LIMIT` | `5` |
-| `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
-| `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | `https://<your-domain>` |
-| `APP_TIMEZONE` | `Asia/Kolkata` |
-| `CRON_SECRET` | Random string, 16+ characters (used by the cron jobs below) |
-| `STORAGE_DIR` | Folder for photos **outside** `hbuilds/` and `public_html`, e.g. `/home/u123456789/domains/<your-domain>/uploads`. Everything under `hbuilds/` is replaced on each deploy. (Alternatively use `FTP_*` + `STORAGE_URL` or `R2_*`.) |
-| `FILES_SECRET` | Random string (defaults to `BETTER_AUTH_SECRET`) |
-| `SMS_*`, `NEXT_PUBLIC_MAP_*` | As in `.env.example` |
+| `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` | `https://<app-domain>` |
+| `DB_HOST` | `127.0.0.1` (same server; not `localhost`, not the `srvNNNN.hstgr.io` remote host) |
+| `SEED_*` | remove (only for `npm run db:seed` on your computer) |
+| Storage | keep `FTP_*` + `STORAGE_URL` pointing at the data site, or use `STORAGE_DIR` (a folder outside `hbuilds/` and `public_html`) |
 
-`NEXT_PUBLIC_*` values are built into the app: after changing one, **redeploy**. Other variables are read at start-up: after changing one, **restart** the app from the site dashboard.
+Any change to the file means building a new archive and redeploying.
 
-### 3. Database
+### 3. Deploy over FTP (no Git)
 
-Run `npm run db:migrate`, then `npm run db:seed` on a fresh database, from your own computer with the database's remote host in `.env` (hPanel → Databases → Remote MySQL must allow your IP). The deployed app itself always uses `127.0.0.1`.
+1. Make an archive of the committed source plus the production `.env` (leave out `node_modules`, `.next` and `docs/`):
+   `git archive --format=tar.gz -o deploy.tar.gz HEAD -- . ':!docs'`, then add `.env` to it.
+2. Upload it over FTP into `domains/<app-domain>/public_html/_deploy/`, together with an `.htaccess` containing `Require all denied` so the archive (it contains secrets) can't be downloaded while it waits.
+3. Start the build from the archive (hPanel → the app site → *Deployments*, or the Hostinger API `Start Node.js build` with `source_type: archive`, `archive_path: _deploy/deploy.tar.gz`, the settings above).
+4. When the build log ends with *Application restarted*, the site is live. Publishing also clears `public_html`, which removes the archive.
 
-### 4. Cron jobs
+### 4. Database
 
-hPanel → the website → **Advanced → Cron Jobs**, one job per command. Hostinger runs Node.js cron jobs with its own Node binary and does **not** pass the app's variables, so each command loads the site's env file. Print the exact commands for your account and domain (it also checks Hostinger's 255-character limit):
+Run `npm run db:migrate`, then `npm run db:seed` on a fresh database, from your own computer with the database's remote host in your local `.env` (hPanel → Databases → Remote MySQL must allow your IP). The deployed app always uses `127.0.0.1`.
+
+### 5. Cron jobs
+
+hPanel → the **app site** → **Advanced → Cron Jobs**, one job per command. `scripts/cron.mjs` is shipped inside the server bundle and reads `CRON_SECRET` and the app URL from the bundle's `.env`, so the commands need no env flags. Print them for your account and domain (it also checks Hostinger's 255-character limit):
 
 ```bash
-node scripts/cron.mjs commands u123456789 your-domain.com
+node scripts/cron.mjs commands u123456789 your-app-domain.com
 ```
-
-which prints, for example:
 
 | Schedule (UTC) | Command |
 |---|---|
-| `30 3 * * *` (09:00 IST) | `/opt/alt/alt-nodejs22/root/bin/node --env-file=/home/u123456789/domains/your-domain.com/hbuilds/config/.env /home/u123456789/domains/your-domain.com/hbuilds/current/nodejs/scripts/cron.mjs daily` |
+| `30 3 * * *` (09:00 IST) | `/opt/alt/alt-nodejs22/root/bin/node /home/u123456789/domains/your-app-domain.com/hbuilds/current/nodejs/scripts/cron.mjs daily` |
 | `*/10 * * * *` | the same command ending in `sms` |
 
-Match the `alt-nodejs22` part to the app's Node version. If a command would be too long, use the curl form instead (it needs no env file): `curl -fsS "https://your-domain.com/api/cron/daily?key=<CRON_SECRET>"`. Cron output can be checked in hPanel; a healthy daily run prints `"ok":true`.
+Match `alt-nodejs22` to the app's Node version. Alternative that needs no files at all: `curl -fsS "https://your-app-domain.com/api/cron/daily?key=<CRON_SECRET>"`. Cron output can be checked in hPanel; a healthy run prints `"ok":true`.
 
 ### Limits to keep in mind
 
